@@ -1,0 +1,1391 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>每日任务清单</title>
+  <link rel="stylesheet" href="motion.css" />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      background: url("bg.png") no-repeat center center fixed;
+      background-size: cover;
+      min-height: 100vh;
+      padding: 20px;
+      position: relative;
+      color: #f7fafc;
+    }
+
+    body::before {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.22);
+      z-index: -1;
+    }
+
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 24px;
+      font-size: 2.2em;
+      text-shadow: 0 2px 10px rgba(0,0,0,0.8), 0 0 30px rgba(100, 200, 255, 0.3);
+      letter-spacing: 1px;
+    }
+
+    .page-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      justify-content: center;
+      margin-bottom: 22px;
+    }
+
+    .nav-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: rgba(20, 25, 40, 0.5);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      color: #cbd5e0;
+      text-decoration: none;
+      transition: transform 0.2s, background 0.2s, color 0.2s;
+      backdrop-filter: blur(10px);
+    }
+
+    .nav-link:hover,
+    .nav-link.active {
+      background: rgba(99, 179, 237, 0.3);
+      color: #f7fafc;
+      transform: translateY(-1px);
+    }
+
+    .stats {
+      display: flex;
+      justify-content: space-around;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+
+    .stat-card {
+      background: rgba(30, 35, 50, 0.5);
+      backdrop-filter: blur(18px);
+      padding: 18px 24px;
+      border-radius: 12px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      min-width: 140px;
+      border: 1px solid rgba(255, 255, 255, 0.12);
+    }
+
+    .stat-number {
+      font-size: 2em;
+      font-weight: bold;
+      color: #90cdf4;
+      text-shadow: 0 0 20px rgba(99, 179, 237, 0.35);
+    }
+
+    .stat-label {
+      color: #cbd5e0;
+      font-size: 14px;
+      margin-top: 6px;
+      font-weight: 500;
+    }
+
+    .input-section {
+      background: rgba(30, 35, 50, 0.55);
+      backdrop-filter: blur(20px);
+      padding: 22px;
+      border-radius: 15px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      margin-bottom: 20px;
+      border: 1px solid rgba(255, 255, 255, 0.15);
+    }
+
+    .task-input {
+      width: 100%;
+      padding: 14px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 15px;
+      background: rgba(20, 25, 40, 0.5);
+      color: #f7fafc;
+      transition: all 0.25s;
+    }
+    .task-input::placeholder { color: #a0aec0; }
+    .task-input:focus {
+      outline: none;
+      border-color: rgba(99, 179, 237, 0.6);
+      box-shadow: 0 0 15px rgba(99, 179, 237, 0.2);
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 14px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .input-group label {
+      font-weight: 600;
+      color: #e2e8f0;
+      margin-bottom: 5px;
+      font-size: 13px;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+    }
+
+    .input-group input,
+    .input-group select {
+      padding: 10px 12px;
+      border: 2px solid rgba(255, 255, 255, 0.15);
+      border-radius: 8px;
+      font-size: 14px;
+      transition: all 0.25s;
+      background: rgba(20, 25, 40, 0.5);
+      color: #f7fafc;
+    }
+
+    .input-group input::placeholder { color: #a0aec0; }
+
+    .input-group input:focus,
+    .input-group select:focus {
+      outline: none;
+      border-color: rgba(99, 179, 237, 0.6);
+      box-shadow: 0 0 15px rgba(99, 179, 237, 0.2);
+    }
+
+    .btn-add {
+      width: 100%;
+      padding: 14px;
+      background: linear-gradient(135deg, rgba(99, 179, 237, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 17px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+
+    .btn-add:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(99, 179, 237, 0.4);
+    }
+
+    .view-tabs {
+      display: flex;
+      gap: 0;
+      margin-bottom: 14px;
+      background: rgba(20, 25, 40, 0.5);
+      border-radius: 12px;
+      padding: 4px;
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .view-tab {
+      flex: 1;
+      padding: 12px 18px;
+      border: none;
+      background: transparent;
+      color: #a0aec0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.25s;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .view-tab.active {
+      background: rgba(99, 179, 237, 0.3);
+      color: #f7fafc;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+    }
+
+    .filters {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-btn {
+      padding: 8px 16px;
+      border: 2px solid rgba(255,255,255,0.25);
+      background: rgba(20, 25, 40, 0.5);
+      color: #e2e8f0;
+      border-radius: 20px;
+      cursor: pointer;
+      transition: all 0.25s;
+      backdrop-filter: blur(10px);
+    }
+
+    .filter-btn.active,
+    .filter-btn:hover {
+      background: rgba(99, 179, 237, 0.3);
+      border-color: rgba(99, 179, 237, 0.6);
+      color: #f7fafc;
+    }
+
+    .task-grid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 18px;
+      align-items: start;
+    }
+
+    .task-grid.history-mode {
+      grid-template-columns: 1fr;
+    }
+    .task-grid.history-mode .task-column-left,
+    .task-grid.history-mode .task-column-right {
+      display: none;
+    }
+    .task-grid.history-mode .task-column-center {
+      grid-column: 1 / -1;
+    }
+    .task-grid.history-mode .column-title {
+      display: none;
+    }
+
+    @media (max-width: 1100px) {
+      .task-grid { grid-template-columns: 1fr; }
+    }
+
+    .task-column {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .column-title {
+      color: #f7fafc;
+      font-size: 1.05em;
+      font-weight: 700;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.7);
+      margin-left: 4px;
+    }
+
+    .task-list {
+      background: rgba(30, 35, 50, 0.5);
+      backdrop-filter: blur(20px);
+      border-radius: 15px;
+      padding: 18px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.4);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      min-height: 180px;
+    }
+
+    .date-group { margin-bottom: 24px; }
+    .date-group:last-child { margin-bottom: 0; }
+
+    .date-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.05em;
+      color: #f7fafc;
+      font-weight: 700;
+      margin-bottom: 14px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(99, 179, 237, .6);
+    }
+
+    .date-badge {
+      background: linear-gradient(135deg, rgba(99, 179, 237, 0.9) 0%, rgba(118, 75, 162, 0.9) 100%);
+      color: white;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8em;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+    }
+
+    .date-weekday {
+      color: #a0aec0;
+      font-size: 0.9em;
+      font-weight: 500;
+    }
+
+    .timeline {
+      position: relative;
+      padding-left: 68px;
+    }
+
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 50px;
+      top: 0;
+      bottom: 0;
+      width: 3px;
+      background: linear-gradient(to bottom, rgba(102, 126, 234, 0.8), rgba(118, 75, 162, 0.8));
+      border-radius: 3px;
+    }
+
+    .time-period { margin-bottom: 16px; }
+
+    .time-period-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+      margin-left: -68px;
+      padding-left: 68px;
+      position: relative;
+    }
+
+    .time-period-icon {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+      position: absolute;
+      left: 34px;
+      z-index: 2;
+      border: 2px solid white;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    .period-morning .time-period-icon { background: #FFD54F; }
+    .period-afternoon .time-period-icon { background: #FF8A65; }
+    .period-evening .time-period-icon { background: #7986CB; }
+    .period-night .time-period-icon { background: #9575CD; }
+    .period-allday .time-period-icon { background: #81C784; }
+
+    .time-period-title {
+      font-weight: 600;
+      color: #e2e8f0;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .task-item {
+      display: flex;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      position: relative;
+      animation: slideIn 0.25s ease;
+    }
+
+    @keyframes slideIn {
+      from { opacity: 0; transform: translateX(-12px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+
+    @keyframes fadeOut {
+      from { opacity: 1; transform: translateX(0); }
+      to { opacity: 0; transform: translateX(20px); }
+    }
+
+    .task-item.fading-out { animation: fadeOut 0.5s ease forwards; }
+
+    .task-time {
+      position: absolute;
+      left: -68px;
+      width: 46px;
+      text-align: right;
+      font-weight: 700;
+      color: #90cdf4;
+      font-size: 12px;
+      top: 10px;
+    }
+
+    .task-dot {
+      position: absolute;
+      left: -19px;
+      top: 14px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: #1a202c;
+      border: 3px solid #63b3ed;
+      z-index: 1;
+      transition: all 0.25s;
+      box-shadow: 0 0 8px rgba(99, 179, 237, 0.4);
+    }
+
+    .task-item:hover .task-dot {
+      transform: scale(1.25);
+      background: #63b3ed;
+    }
+    .task-item.completed .task-dot {
+      background: #81C784;
+      border-color: #81C784;
+    }
+
+    .task-card {
+      flex: 1;
+      background: rgba(40, 45, 65, 0.62);
+      border-radius: 12px;
+      padding: 12px;
+      margin-left: 12px;
+      transition: all 0.25s;
+      border-left: 4px solid #63b3ed;
+      position: relative;
+      backdrop-filter: blur(14px);
+      box-shadow: 0 2px 15px rgba(0,0,0,0.28);
+    }
+
+    .task-card:hover {
+      box-shadow: 0 8px 30px rgba(0,0,0,0.35);
+      transform: translateX(4px);
+      background: rgba(50, 55, 75, 0.78);
+    }
+
+    .task-item.completed .task-card {
+      opacity: 0.62;
+      border-left-color: #81C784;
+    }
+
+    .task-item.completed .task-title {
+      text-decoration: line-through;
+      color: #a0aec0;
+    }
+
+    .task-card.priority-high { border-left-color: #fc8181; }
+    .task-card.priority-medium { border-left-color: #f6ad55; }
+    .task-card.priority-low { border-left-color: #68d391; }
+
+    .task-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .checkbox {
+      width: 22px;
+      height: 22px;
+      border: 2px solid #63b3ed;
+      border-radius: 50%;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.25s;
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+
+    .checkbox:hover { background: rgba(99, 179, 237, 0.2); }
+
+    .checkbox.checked {
+      background: #81C784;
+      border-color: #81C784;
+    }
+
+    .checkbox.checked::after {
+      content: "✓";
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .task-title {
+      flex: 1;
+      font-weight: 600;
+      color: #f7fafc;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    .task-type-badge {
+      display: inline-block;
+      margin-left: 8px;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 12px;
+      vertical-align: middle;
+      border: 1px solid rgba(255,255,255,.12);
+      background: rgba(0,0,0,.25);
+      color: #e2e8f0;
+    }
+
+    .type-weekly { color: #90cdf4; }
+    .type-monthly { color: #f6ad55; }
+    .type-halfYear { color: #fc8181; }
+
+    .task-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-left: 32px;
+      margin-bottom: 6px;
+    }
+
+    .task-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #e2e8f0;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 8px;
+      border-radius: 14px;
+    }
+
+    .priority-badge { font-weight: 600; font-size: 11px; }
+
+    .task-progress {
+      margin-left: 32px;
+      margin-top: 8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .progress-bar {
+      flex: 1;
+      min-width: 140px;
+      height: 8px;
+      background: rgba(255,255,255,0.12);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #63b3ed, #9f7aea);
+      width: 0%;
+      transition: width .25s ease;
+    }
+
+    .progress-text {
+      font-size: 12px;
+      color: #cbd5e0;
+      min-width: 36px;
+    }
+
+    .btn-progress {
+      background: rgba(99,179,237,.25);
+      color: #fff;
+      border: 1px solid rgba(99,179,237,.4);
+      padding: 4px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .btn-progress:hover { background: rgba(99,179,237,.38); }
+
+    .btn-delete {
+      background: #ff5252;
+      color: white;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+      transition: all 0.25s;
+      position: absolute;
+      right: 10px;
+      top: 10px;
+      opacity: 0;
+    }
+
+    .task-card:hover .btn-delete { opacity: 1; }
+    .btn-delete:hover { background: #ff1744; }
+
+    .empty-state {
+      text-align: center;
+      padding: 30px 10px;
+      color: #a0aec0;
+    }
+
+    .empty-state svg {
+      width: 56px;
+      height: 56px;
+      margin-bottom: 12px;
+      opacity: 0.5;
+    }
+
+    .history-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .history-item {
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      background: rgba(40, 45, 65, 0.6);
+      border-radius: 12px;
+      padding: 15px 20px;
+      backdrop-filter: blur(15px);
+      border-left: 4px solid #81C784;
+      animation: slideIn 0.25s ease;
+    }
+
+    .history-checkbox {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #81C784;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-size: 14px;
+      font-weight: bold;
+      flex-shrink: 0;
+    }
+
+    .history-content { flex: 1; }
+
+    .history-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #f7fafc;
+      text-decoration: line-through;
+      opacity: 0.75;
+      margin-bottom: 8px;
+    }
+
+    .history-meta {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+
+    .history-meta span {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      color: #a0aec0;
+      background: rgba(0, 0, 0, 0.35);
+      padding: 4px 10px;
+      border-radius: 15px;
+    }
+
+    .history-meta .completed-time {
+      color: #81C784;
+      background: rgba(129, 199, 132, 0.15);
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1 data-motion-stage style="--motion-order: 0;">📋 每日任务清单</h1>
+
+    <nav class="page-nav" data-motion-stage style="--motion-order: 1;">
+      <a class="nav-link active" href="index.html" data-hover-pop>每日计划</a>
+      <a class="nav-link" href="goals.html#overview" data-hover-pop>长期总览</a>
+      <a class="nav-link" href="goals.html#1y" data-hover-pop>1年目标</a>
+      <a class="nav-link" href="goals.html#3y" data-hover-pop>3年目标</a>
+      <a class="nav-link" href="goals.html#4y" data-hover-pop>4年目标</a>
+      <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
+    </nav>
+
+    <div class="stats" data-motion-stage style="--motion-order: 2;">
+      <div class="stat-card" data-hover-pop>
+        <div class="stat-number" id="totalTasks">0</div>
+        <div class="stat-label">总任务</div>
+      </div>
+      <div class="stat-card" data-hover-pop>
+        <div class="stat-number" id="completedTasks">0</div>
+        <div class="stat-label">已完成</div>
+      </div>
+      <div class="stat-card" data-hover-pop>
+        <div class="stat-number" id="pendingTasks">0</div>
+        <div class="stat-label">待完成</div>
+      </div>
+    </div>
+
+    <div class="input-section" data-motion-stage style="--motion-order: 3;" data-hover-pop>
+      <input type="text" class="task-input" id="taskInput" placeholder="请输入任务内容..." />
+
+      <div class="input-grid">
+        <div class="input-group">
+          <label>📅 日期</label>
+          <input type="date" id="dateInput" />
+        </div>
+        <div class="input-group">
+          <label>🕒 时间</label>
+          <input type="time" id="timeInput" />
+        </div>
+        <div class="input-group">
+          <label>📍 地点</label>
+          <input type="text" id="locationInput" placeholder="例如：公司、家里" />
+        </div>
+        <div class="input-group">
+          <label>⏱️ 预计时长（分钟）</label>
+          <input type="number" id="durationInput" placeholder="30" min="1" />
+        </div>
+        <div class="input-group">
+          <label>🔺 优先级</label>
+          <select id="priorityInput">
+            <option value="high">高优先级</option>
+            <option value="medium" selected>中优先级</option>
+            <option value="low">低优先级</option>
+          </select>
+        </div>
+        <div class="input-group">
+          <label>🗂️ 任务类型</label>
+          <select id="taskTypeInput" onchange="onTaskTypeChange()">
+            <option value="daily" selected>日常任务</option>
+            <option value="weekly">周任务</option>
+            <option value="monthly">月任务</option>
+            <option value="halfYear">半年任务</option>
+          </select>
+        </div>
+        <div class="input-group" id="endDateGroup" style="display:none;">
+          <label>📅 结束日期</label>
+          <input type="date" id="taskEndDateInput" />
+        </div>
+      </div>
+
+      <button class="btn-add" onclick="addTask()">➕ 添加任务</button>
+    </div>
+
+    <div class="view-tabs" data-motion-stage style="--motion-order: 4;" data-hover-pop>
+      <button class="view-tab active" id="tab-tasks" onclick="switchView('tasks')">今日任务</button>
+      <button class="view-tab" id="tab-history" onclick="switchView('history')">历史记录</button>
+    </div>
+
+    <div class="filters" id="taskFilters" data-motion-stage style="--motion-order: 5;">
+      <button class="filter-btn active" onclick="filterTasks('all', event)" data-hover-pop>全部</button>
+      <button class="filter-btn" onclick="filterTasks('today', event)" data-hover-pop>今天</button>
+      <button class="filter-btn" onclick="filterTasks('week', event)" data-hover-pop>本周</button>
+      <button class="filter-btn" onclick="filterTasks('month', event)" data-hover-pop>本月</button>
+    </div>
+
+    <div class="task-grid motion-swap" id="taskGrid" data-motion-stage style="--motion-order: 6;">
+      <div class="task-column task-column-left">
+        <h2 class="column-title">周任务</h2>
+        <div class="task-list" id="weeklyList"></div>
+      </div>
+      <div class="task-column task-column-center">
+        <h2 class="column-title">日任务</h2>
+        <div class="task-list" id="taskList"></div>
+      </div>
+      <div class="task-column task-column-right">
+        <h2 class="column-title">月任务</h2>
+        <div class="task-list" id="monthlyList"></div>
+      </div>
+    </div>
+  </div>
+
+  <script src="motion.js"></script>
+  <script>
+    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    let currentFilter = "all";
+    let currentView = "tasks";
+    const uiSections = {
+      input: document.querySelector(".input-section"),
+      stats: document.querySelector(".stats"),
+      filters: document.getElementById("taskFilters"),
+      taskGrid: document.getElementById("taskGrid")
+    };
+
+    document.getElementById("dateInput").valueAsDate = new Date();
+    initializeMotionState();
+
+    function initializeMotionState() {
+      [uiSections.input, uiSections.stats, uiSections.filters].forEach(section => {
+        if (!section) return;
+        section.classList.add("motion-section", "is-visible");
+      });
+    }
+
+    function setDailyPanelsVisible(visible) {
+      if (!window.PageMotion) {
+        uiSections.input.style.display = visible ? "block" : "none";
+        uiSections.stats.style.display = visible ? "flex" : "none";
+        uiSections.filters.style.display = visible ? "flex" : "none";
+        return;
+      }
+
+      PageMotion.setVisibility(uiSections.input, visible, { displayValue: "block" });
+      PageMotion.setVisibility(uiSections.stats, visible, { displayValue: "flex" });
+      PageMotion.setVisibility(uiSections.filters, visible, { displayValue: "flex" });
+    }
+
+    function transitionTaskContent(render) {
+      if (!window.PageMotion || !uiSections.taskGrid) {
+        render();
+        return;
+      }
+
+      PageMotion.animateSwap(uiSections.taskGrid, render, {
+        outMs: 145,
+        inMs: 250
+      });
+    }
+
+    function saveTasks() {
+      localStorage.setItem("tasks", JSON.stringify(tasks));
+      updateStats();
+    }
+
+    function updateStats() {
+      const total = tasks.length;
+      const completed = tasks.filter(t => t.completed).length;
+      const pending = total - completed;
+
+      document.getElementById("totalTasks").textContent = total;
+      document.getElementById("completedTasks").textContent = completed;
+      document.getElementById("pendingTasks").textContent = pending;
+    }
+
+    function addTask() {
+      const taskInput = document.getElementById("taskInput");
+      const dateInput = document.getElementById("dateInput");
+      const timeInput = document.getElementById("timeInput");
+      const locationInput = document.getElementById("locationInput");
+      const durationInput = document.getElementById("durationInput");
+      const priorityInput = document.getElementById("priorityInput");
+      const taskTypeInput = document.getElementById("taskTypeInput");
+      const taskEndDateInput = document.getElementById("taskEndDateInput");
+
+      if (!taskInput.value.trim()) {
+        alert("请输入任务内容！");
+        return;
+      }
+
+      const taskType = taskTypeInput.value;
+      const task = {
+        id: Date.now(),
+        title: taskInput.value.trim(),
+        date: dateInput.value || formatDateKey(new Date()),
+        time: timeInput.value,
+        location: locationInput.value.trim(),
+        duration: durationInput.value,
+        priority: priorityInput.value,
+        taskType,
+        taskEndDate: taskType !== "daily" ? (taskEndDateInput.value || null) : null,
+        progress: 0,
+        progressHistory: [],
+        completed: false,
+        createdAt: new Date().toISOString()
+      };
+
+      tasks.push(task);
+      saveTasks();
+      renderTasks();
+
+      taskInput.value = "";
+      timeInput.value = "";
+      locationInput.value = "";
+      durationInput.value = "";
+      priorityInput.value = "medium";
+      taskTypeInput.value = "daily";
+      taskEndDateInput.value = "";
+      document.getElementById("endDateGroup").style.display = "none";
+    }
+
+    function onTaskTypeChange() {
+      const taskType = document.getElementById("taskTypeInput").value;
+      const endDateGroup = document.getElementById("endDateGroup");
+      const endDateInput = document.getElementById("taskEndDateInput");
+      const dateInput = document.getElementById("dateInput");
+
+      if (taskType === "daily") {
+        endDateGroup.style.display = "none";
+        endDateInput.value = "";
+        return;
+      }
+
+      endDateGroup.style.display = "flex";
+
+      const startDate = new Date(dateInput.value || new Date());
+      const endDate = new Date(startDate);
+
+      switch (taskType) {
+        case "weekly":
+          endDate.setDate(endDate.getDate() + 6);
+          break;
+        case "monthly":
+          endDate.setMonth(endDate.getMonth() + 1);
+          endDate.setDate(endDate.getDate() - 1);
+          break;
+        case "halfYear":
+          endDate.setMonth(endDate.getMonth() + 6);
+          endDate.setDate(endDate.getDate() - 1);
+          break;
+      }
+
+      endDateInput.value = formatDateKey(endDate);
+    }
+
+    function formatDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function getTaskTypeLabel(type) {
+      const labels = {
+        daily: "日常",
+        weekly: "周任务",
+        monthly: "月任务",
+        halfYear: "半年任务"
+      };
+      return labels[type] || type;
+    }
+
+    function toggleTask(id) {
+      const task = tasks.find(t => t.id === id);
+      const taskElement = document.querySelector(`.task-item[data-task-id="${id}"]`);
+
+      if (!task || !taskElement) return;
+
+      taskElement.classList.add("fading-out");
+      setTimeout(() => {
+        task.completed = true;
+        task.completedAt = new Date().toISOString();
+        saveTasks();
+        renderTasks();
+      }, 350);
+    }
+
+    function deleteTask(id) {
+      if (!confirm("确定要删除这个任务吗？")) return;
+      tasks = tasks.filter(t => t.id !== id);
+      saveTasks();
+      if (currentView === "history") renderHistory();
+      else renderTasks();
+    }
+
+    function filterTasks(filter, event) {
+      if (currentFilter === filter) {
+        document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+        if (event && event.target) event.target.classList.add("active");
+        return;
+      }
+
+      currentFilter = filter;
+      document.querySelectorAll(".filter-btn").forEach(btn => btn.classList.remove("active"));
+      if (event && event.target) event.target.classList.add("active");
+      if (currentView === "tasks") {
+        transitionTaskContent(() => renderTasks());
+      }
+    }
+
+    function switchView(view) {
+      if (currentView === view) return;
+      currentView = view;
+
+      document.querySelectorAll(".view-tab").forEach(tab => tab.classList.remove("active"));
+      document.getElementById(`tab-${view}`).classList.add("active");
+
+      const inputSection = document.querySelector(".input-section");
+      const taskFilters = document.getElementById("taskFilters");
+      const stats = document.querySelector(".stats");
+      const taskGrid = document.getElementById("taskGrid");
+      const weeklyList = document.getElementById("weeklyList");
+      const monthlyList = document.getElementById("monthlyList");
+
+      transitionTaskContent(() => {
+        if (view === "history") {
+          if (!window.PageMotion) {
+            inputSection.style.display = "none";
+            taskFilters.style.display = "none";
+            stats.style.display = "none";
+          } else {
+            setDailyPanelsVisible(false);
+          }
+
+          taskGrid.classList.add("history-mode");
+          weeklyList.innerHTML = "";
+          monthlyList.innerHTML = "";
+          renderHistory();
+          return;
+        }
+
+        if (!window.PageMotion) {
+          inputSection.style.display = "block";
+          taskFilters.style.display = "flex";
+          stats.style.display = "flex";
+        } else {
+          setDailyPanelsVisible(true);
+        }
+
+        taskGrid.classList.remove("history-mode");
+        renderTasks();
+      });
+    }
+
+    function getFilteredTasks() {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const weekLater = new Date(today);
+      weekLater.setDate(weekLater.getDate() + 7);
+
+      const monthLater = new Date(today);
+      monthLater.setMonth(monthLater.getMonth() + 1);
+
+      const pendingTasks = tasks.filter(task => !task.completed);
+
+      return pendingTasks.filter(task => {
+        const taskDate = new Date(task.date);
+        taskDate.setHours(0, 0, 0, 0);
+
+        switch (currentFilter) {
+          case "today":
+            return taskDate.getTime() === today.getTime();
+          case "week":
+            return taskDate >= today && taskDate <= weekLater;
+          case "month":
+            return taskDate >= today && taskDate <= monthLater;
+          default:
+            return true;
+        }
+      }).sort((a, b) => {
+        const dateCompare = new Date(a.date) - new Date(b.date);
+        if (dateCompare !== 0) return dateCompare;
+
+        if (!a.time && !b.time) return 0;
+        if (!a.time) return 1;
+        if (!b.time) return -1;
+        return a.time.localeCompare(b.time);
+      });
+    }
+
+    function getCompletedTasks() {
+      return tasks
+        .filter(task => task.completed)
+        .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
+    }
+
+    function getTimePeriod(time) {
+      if (!time) return "allday";
+      const hour = parseInt(time.split(":")[0], 10);
+      if (hour < 12) return "morning";
+      if (hour < 18) return "afternoon";
+      if (hour < 22) return "evening";
+      return "night";
+    }
+
+    function getPeriodTitle(period) {
+      const titles = {
+        morning: "🌅 上午",
+        afternoon: "☀️ 下午",
+        evening: "🌆 晚上",
+        night: "🌙 深夜",
+        allday: "📌 全天"
+      };
+      return titles[period];
+    }
+
+    function getPeriodIcon(period) {
+      const icons = {
+        morning: "🌅",
+        afternoon: "☀️",
+        evening: "🌆",
+        night: "🌙",
+        allday: "📌"
+      };
+      return icons[period];
+    }
+
+    function renderTasks() {
+      const taskGrid = document.getElementById("taskGrid");
+      taskGrid.classList.remove("history-mode");
+
+      const filteredTasks = getFilteredTasks();
+
+      // 关键修复：长期任务不要生成“每天实例”，避免刷屏
+      // 直接按任务类型分栏展示
+      const weeklyTasks = filteredTasks.filter(task => task.taskType === "weekly");
+      const dailyTasks = filteredTasks.filter(task => task.taskType === "daily" || !task.taskType);
+      const monthlyTasks = filteredTasks.filter(task => task.taskType === "monthly" || task.taskType === "halfYear");
+
+      renderTaskColumn("weeklyList", weeklyTasks);
+      renderTaskColumn("taskList", dailyTasks);
+      renderTaskColumn("monthlyList", monthlyTasks);
+    }
+
+    function renderTaskColumn(listId, columnTasks) {
+      const taskList = document.getElementById(listId);
+      if (!taskList) return;
+
+      if (columnTasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="empty-state" data-hover-pop>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p>暂无任务</p>
+          </div>
+        `;
+        return;
+      }
+
+      const groupedTasks = columnTasks.reduce((groups, task) => {
+        const date = task.date || "未指定日期";
+        if (!groups[date]) groups[date] = [];
+        groups[date].push(task);
+        return groups;
+      }, {});
+
+      const sortedDates = Object.keys(groupedTasks).sort((a, b) => {
+        if (a === "未指定日期") return 1;
+        if (b === "未指定日期") return -1;
+        return new Date(a) - new Date(b);
+      });
+
+      let html = "";
+      for (const date of sortedDates) {
+        const dateTasks = groupedTasks[date];
+        const dateInfo = formatDateInfo(date);
+
+        html += `
+          <div class="date-group">
+            <div class="date-header">
+              <span class="date-badge">${dateInfo.label}</span>
+              <span>${dateInfo.fullDate}</span>
+              <span class="date-weekday">${dateInfo.weekday}</span>
+            </div>
+            <div class="timeline">
+        `;
+
+        const periodGroups = dateTasks.reduce((groups, task) => {
+          const period = getTimePeriod(task.time);
+          if (!groups[period]) groups[period] = [];
+          groups[period].push(task);
+          return groups;
+        }, {});
+
+        const periodOrder = ["morning", "afternoon", "evening", "night", "allday"];
+
+        for (const period of periodOrder) {
+          if (!periodGroups[period]) continue;
+
+          html += `
+            <div class="time-period period-${period}">
+              <div class="time-period-header">
+                <div class="time-period-icon">${getPeriodIcon(period)}</div>
+                <span class="time-period-title">${getPeriodTitle(period)}</span>
+              </div>
+          `;
+
+          for (const task of periodGroups[period]) {
+            html += renderTaskItem(task);
+          }
+
+          html += `</div>`;
+        }
+
+        html += `</div></div>`;
+      }
+
+      taskList.innerHTML = html;
+    }
+
+    function renderHistory() {
+      const taskList = document.getElementById("taskList");
+      const completedTasks = getCompletedTasks();
+
+      if (completedTasks.length === 0) {
+        taskList.innerHTML = `
+          <div class="empty-state" data-hover-pop>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+            </svg>
+            <p>暂无已完成任务</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '<div class="history-list">';
+
+      for (const task of completedTasks) {
+        const completedDate = new Date(task.completedAt || task.createdAt);
+        const completedTimeStr =
+          `${completedDate.getMonth() + 1}月${completedDate.getDate()}日 ` +
+          `${String(completedDate.getHours()).padStart(2, "0")}:${String(completedDate.getMinutes()).padStart(2, "0")}`;
+
+        const priorityBadgeMap = {
+          high: "🔴 高",
+          medium: "🟡 中",
+          low: "🟢 低"
+        };
+        const priorityBadge = priorityBadgeMap[task.priority] || "🟡 中";
+
+        html += `
+          <div class="history-item" data-hover-pop>
+            <div class="history-checkbox">✓</div>
+            <div class="history-content">
+              <div class="history-title">${escapeHtml(task.title)}</div>
+              <div class="history-meta">
+                <span>📅 ${task.date || "未指定日期"}</span>
+                ${task.time ? `<span>🕒 ${task.time}</span>` : ""}
+                ${task.location ? `<span>📍 ${escapeHtml(task.location)}</span>` : ""}
+                <span class="priority-badge">${priorityBadge}</span>
+                <span class="completed-time">✓ 完成于 ${completedTimeStr}</span>
+              </div>
+            </div>
+            <button class="btn-delete" onclick="deleteTask(${task.id})" style="opacity:1;position:static;">删除</button>
+          </div>
+        `;
+      }
+
+      html += "</div>";
+      taskList.innerHTML = html;
+    }
+
+    function renderTaskItem(task) {
+      const priorityClass = `priority-${task.priority || "medium"}`;
+      const priorityBadgeMap = {
+        high: "🔴 高",
+        medium: "🟡 中",
+        low: "🟢 低"
+      };
+      const priorityBadge = priorityBadgeMap[task.priority] || "🟡 中";
+
+      const isLongTerm = task.taskType && task.taskType !== "daily";
+      const taskTypeLabel = isLongTerm ? getTaskTypeLabel(task.taskType) : "";
+      const typeClass = isLongTerm ? `type-${task.taskType}` : "";
+
+      let remainingDays = "";
+      if (isLongTerm && task.taskEndDate) {
+        const end = new Date(task.taskEndDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        end.setHours(0, 0, 0, 0);
+
+        const diff = Math.ceil((end - today) / (1000 * 60 * 60 * 24));
+        if (diff > 0) remainingDays = `还剩${diff}天`;
+        else if (diff === 0) remainingDays = "今天截止";
+        else remainingDays = "已过期";
+      }
+
+      return `
+        <div class="task-item ${task.completed ? "completed" : ""} ${isLongTerm ? `long-term ${typeClass}` : ""}" data-task-id="${task.id}" data-hover-pop>
+          <div class="task-time">${task.time || (isLongTerm ? "长期" : "全天")}</div>
+          <div class="task-dot"></div>
+          <div class="task-card ${priorityClass}">
+            <div class="task-header">
+              <div class="checkbox ${task.completed ? "checked" : ""}" onclick="toggleTask(${task.id})"></div>
+              <div class="task-title">
+                ${escapeHtml(task.title)}
+                ${isLongTerm ? `<span class="task-type-badge ${typeClass}">${taskTypeLabel}</span>` : ""}
+              </div>
+            </div>
+            <div class="task-meta">
+              ${task.location ? `<span>📍 ${escapeHtml(task.location)}</span>` : ""}
+              ${task.duration ? `<span>⏱️ ${task.duration}分钟</span>` : ""}
+              <span class="priority-badge">${priorityBadge}</span>
+              ${isLongTerm && remainingDays ? `<span class="remaining-days">⏰ ${remainingDays}</span>` : ""}
+            </div>
+            ${isLongTerm && !task.completed ? `
+              <div class="task-progress">
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: ${task.progress || 0}%"></div>
+                </div>
+                <span class="progress-text">${task.progress || 0}%</span>
+                <button class="btn-progress" onclick="updateProgress(${task.id}, event)">更新进度</button>
+              </div>
+            ` : ""}
+            <button class="btn-delete" onclick="deleteTask(${task.id})">删除</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function updateProgress(id, event) {
+      if (event) event.stopPropagation();
+      const task = tasks.find(t => t.id === id);
+      if (!task) return;
+
+      const current = Number(task.progress || 0);
+      const input = prompt(`请输入进度（0-100）`, current);
+      if (input === null) return;
+
+      const value = Number(input);
+      if (Number.isNaN(value) || value < 0 || value > 100) {
+        alert("请输入 0 到 100 的数字");
+        return;
+      }
+
+      task.progress = value;
+      task.progressHistory = task.progressHistory || [];
+      task.progressHistory.push({
+        value,
+        time: new Date().toISOString()
+      });
+
+      if (value >= 100) {
+        task.completed = true;
+        task.completedAt = new Date().toISOString();
+      }
+
+      saveTasks();
+      if (currentView === "history") renderHistory();
+      else renderTasks();
+    }
+
+    function formatDateInfo(dateStr) {
+      if (!dateStr || dateStr === "未指定日期") {
+        return { label: "未指定", fullDate: "未指定日期", weekday: "" };
+      }
+
+      const date = new Date(dateStr);
+      if (Number.isNaN(date.getTime())) {
+        return { label: "异常日期", fullDate: dateStr, weekday: "" };
+      }
+
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+
+      const tomorrow = new Date(today);
+      tomorrow.setDate(tomorrow.getDate() + 1);
+
+      const current = new Date(date);
+      current.setHours(0, 0, 0, 0);
+
+      const weekdays = ["周日", "周一", "周二", "周三", "周四", "周五", "周六"];
+
+      let label;
+      if (current.getTime() === today.getTime()) label = "今天";
+      else if (current.getTime() === tomorrow.getTime()) label = "明天";
+      else label = `${date.getMonth() + 1}/${date.getDate()}`;
+
+      return {
+        label,
+        fullDate: `${date.getFullYear()}年${date.getMonth() + 1}月${date.getDate()}日`,
+        weekday: weekdays[date.getDay()]
+      };
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement("div");
+      div.textContent = text ?? "";
+      return div.innerHTML;
+    }
+
+    document.getElementById("taskInput").addEventListener("keypress", function(e) {
+      if (e.key === "Enter") addTask();
+    });
+
+    renderTasks();
+    updateStats();
+  </script>
+</body>
+</html>
