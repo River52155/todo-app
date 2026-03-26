@@ -1,16 +1,16 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>每日任务清单</title>
-  <link rel="stylesheet" href="motion.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
       font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
-      background: url("bg.png") no-repeat center center fixed;
+      background: url("assets/bg.png") no-repeat center center fixed;
       background-size: cover;
       min-height: 100vh;
       padding: 20px;
@@ -384,6 +384,7 @@
       align-items: flex-start;
       margin-bottom: 10px;
       position: relative;
+      isolation: isolate;
       animation: slideIn 0.25s ease;
     }
 
@@ -630,6 +631,8 @@
       display: flex;
       align-items: center;
       gap: 15px;
+      position: relative;
+      isolation: isolate;
       background: rgba(40, 45, 65, 0.6);
       border-radius: 12px;
       padding: 15px 20px;
@@ -690,12 +693,10 @@
   <div class="container">
     <h1 data-motion-stage style="--motion-order: 0;">📋 每日任务清单</h1>
 
-    <nav class="page-nav" data-motion-stage style="--motion-order: 1;">
+            <nav class="page-nav" data-motion-stage style="--motion-order: 1;">
       <a class="nav-link active" href="index.html" data-hover-pop>每日计划</a>
-      <a class="nav-link" href="goals.html#overview" data-hover-pop>长期总览</a>
-      <a class="nav-link" href="goals.html#1y" data-hover-pop>1年目标</a>
-      <a class="nav-link" href="goals.html#3y" data-hover-pop>3年目标</a>
-      <a class="nav-link" href="goals.html#4y" data-hover-pop>4年目标</a>
+      <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
+      <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
       <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
     </nav>
 
@@ -788,7 +789,7 @@
     </div>
   </div>
 
-  <script src="motion.js"></script>
+  <script src="scripts/motion.js"></script>
   <script>
     let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
     let currentFilter = "all";
@@ -962,12 +963,59 @@
       }, 350);
     }
 
-    function deleteTask(id) {
-      if (!confirm("确定要删除这个任务吗？")) return;
-      tasks = tasks.filter(t => t.id !== id);
-      saveTasks();
-      if (currentView === "history") renderHistory();
-      else renderTasks();
+    function cloneTaskSnapshot(task) {
+      if (window.structuredClone) return window.structuredClone(task);
+      return JSON.parse(JSON.stringify(task));
+    }
+
+    function findTaskDeleteElement(id, trigger) {
+      if (trigger && typeof trigger.closest === "function") {
+        const container = trigger.closest(".task-item, .history-item");
+        if (container) return container;
+      }
+
+      return currentView === "history"
+        ? document.querySelector(`.history-item[data-task-id="${id}"]`)
+        : document.querySelector(`.task-item[data-task-id="${id}"]`);
+    }
+
+    function deleteTask(id, trigger) {
+      const taskIndex = tasks.findIndex(task => task.id === id);
+      if (taskIndex < 0) return;
+
+      const snapshot = cloneTaskSnapshot(tasks[taskIndex]);
+      const deleteElement = findTaskDeleteElement(id, trigger);
+
+      const removeTask = () => {
+        tasks = tasks.filter(task => task.id !== id);
+        saveTasks();
+        if (currentView === "history") renderHistory();
+        else renderTasks();
+      };
+
+      const restoreTask = () => {
+        if (tasks.some(task => task.id === id)) return;
+        const nextTasks = tasks.slice();
+        nextTasks.splice(Math.min(taskIndex, nextTasks.length), 0, snapshot);
+        tasks = nextTasks;
+        saveTasks();
+        if (currentView === "history") renderHistory();
+        else renderTasks();
+      };
+
+      if (window.PageMotion?.removeWithUndo) {
+        PageMotion.removeWithUndo({
+          key: `task:${id}`,
+          element: deleteElement,
+          label: snapshot.title || "\u672a\u547d\u540d\u4efb\u52a1",
+          remove: removeTask,
+          restore: restoreTask,
+          timeoutMs: 2200
+        });
+        return;
+      }
+
+      removeTask();
     }
 
     function filterTasks(filter, event) {
@@ -1118,6 +1166,7 @@
       renderTaskColumn("weeklyList", weeklyTasks);
       renderTaskColumn("taskList", dailyTasks);
       renderTaskColumn("monthlyList", monthlyTasks);
+      window.PageMotion?.reconcilePendingRemovals?.();
     }
 
     function renderTaskColumn(listId, columnTasks) {
@@ -1126,7 +1175,7 @@
 
       if (columnTasks.length === 0) {
         taskList.innerHTML = `
-          <div class="empty-state" data-hover-pop>
+          <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
@@ -1203,13 +1252,14 @@
 
       if (completedTasks.length === 0) {
         taskList.innerHTML = `
-          <div class="empty-state" data-hover-pop>
+          <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
             <p>暂无已完成任务</p>
           </div>
         `;
+        window.PageMotion?.reconcilePendingRemovals?.();
         return;
       }
 
@@ -1229,7 +1279,7 @@
         const priorityBadge = priorityBadgeMap[task.priority] || "🟡 中";
 
         html += `
-          <div class="history-item" data-hover-pop>
+          <div class="history-item" data-task-id="${task.id}">
             <div class="history-checkbox">✓</div>
             <div class="history-content">
               <div class="history-title">${escapeHtml(task.title)}</div>
@@ -1241,13 +1291,14 @@
                 <span class="completed-time">✓ 完成于 ${completedTimeStr}</span>
               </div>
             </div>
-            <button class="btn-delete" onclick="deleteTask(${task.id})" style="opacity:1;position:static;">删除</button>
+            <button class="btn-delete" onclick="deleteTask(${task.id}, this)" style="opacity:1;position:static;">删除</button>
           </div>
         `;
       }
 
       html += "</div>";
       taskList.innerHTML = html;
+      window.PageMotion?.reconcilePendingRemovals?.();
     }
 
     function renderTaskItem(task) {
@@ -1277,7 +1328,7 @@
       }
 
       return `
-        <div class="task-item ${task.completed ? "completed" : ""} ${isLongTerm ? `long-term ${typeClass}` : ""}" data-task-id="${task.id}" data-hover-pop>
+        <div class="task-item ${task.completed ? "completed" : ""} ${isLongTerm ? `long-term ${typeClass}` : ""}" data-task-id="${task.id}">
           <div class="task-time">${task.time || (isLongTerm ? "长期" : "全天")}</div>
           <div class="task-dot"></div>
           <div class="task-card ${priorityClass}">
@@ -1303,7 +1354,7 @@
                 <button class="btn-progress" onclick="updateProgress(${task.id}, event)">更新进度</button>
               </div>
             ` : ""}
-            <button class="btn-delete" onclick="deleteTask(${task.id})">删除</button>
+            <button class="btn-delete" onclick="deleteTask(${task.id}, this)">删除</button>
           </div>
         </div>
       `;

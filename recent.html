@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>近期计划</title>
+  <link rel="stylesheet" href="styles/recent.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
+</head>
+<body>
+  <div class="shell">
+    <header class="page-header glass-panel" data-motion-stage style="--motion-order: 0;">
+      <nav class="page-nav">
+        <a class="nav-link" href="index.html" data-hover-pop>每日计划</a>
+        <a class="nav-link active" href="recent.html" data-hover-pop>近期计划</a>
+        <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
+        <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
+      </nav>
+
+      <div class="hero">
+        <div class="hero-copy" data-hover-pop>
+          <p class="eyebrow">Recent planning</p>
+          <h1 class="hero-title">承接未来 30 天里还在变化的事项</h1>
+          <p class="hero-description">
+            这里不是当天待办，也不会覆盖你原来的每日任务数据。
+            它只是把未来 30 天里还没定型、但值得持续关注的事情单独放在一页里。
+          </p>
+          <div class="hero-highlight">提示：原来的每日任务、长期目标和消费记录数据都还在各自页面里。</div>
+          <div class="hero-stats">
+            <div class="stat-card">
+              <div class="stat-number" id="statTotalCards">0</div>
+              <div class="stat-label">卡片总数</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="statThisWeekFocus">0</div>
+              <div class="stat-label">本周关注</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-number" id="statWaitingCount">0</div>
+              <div class="stat-label">等待中</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-visual" data-hover-pop>
+          <div class="hero-visual-head">
+            <span>未来 30 天视角</span>
+            <strong>用区块表达状态，用时间窗口表达轻重缓急</strong>
+          </div>
+          <div class="hero-mini-grid" id="heroLaneSummary"></div>
+          <p class="hero-visual-note">
+            区块不代表硬截止日，随时可以在“本周 / 下周 / 本月 / 未排期”之间切换。
+          </p>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="editor-grid" data-motion-stage style="--motion-order: 1;">
+        <section class="section-card glass-panel">
+          <form id="recentForm">
+            <div class="section-head">
+              <div>
+                <h2>快速记录 / 编辑</h2>
+                <p>先写下标题，再决定它现在处在哪个区块和时间窗口。</p>
+              </div>
+            </div>
+
+            <input id="recentEditingId" type="hidden" />
+
+            <div class="form-grid">
+              <div class="field field-full">
+                <label for="recentTitleInput">标题</label>
+                <input id="recentTitleInput" type="text" maxlength="180" placeholder="例如：4 月前把简历第一版打磨出来" />
+              </div>
+              <div class="field">
+                <label for="recentWindowInput">时间窗口</label>
+                <select id="recentWindowInput">
+                  <option value="this_week">本周</option>
+                  <option value="next_week">下周</option>
+                  <option value="this_month">本月</option>
+                  <option value="unscheduled">未排期</option>
+                </select>
+              </div>
+              <div class="field">
+                <label for="recentLaneInput">当前区块</label>
+                <select id="recentLaneInput">
+                  <option value="focus">本周关注</option>
+                  <option value="in_progress">进行中</option>
+                  <option value="waiting">等待中</option>
+                  <option value="later">以后再看</option>
+                </select>
+              </div>
+              <div class="field field-full">
+                <label for="recentNoteInput">备注</label>
+                <textarea id="recentNoteInput" rows="6" maxlength="1200" placeholder="补一句当前变化点，比如：等 A 部门回复再推进。"></textarea>
+              </div>
+            </div>
+
+            <div class="form-actions">
+              <button type="submit" class="btn-primary" id="recentSubmitButton">保存近期计划</button>
+              <button type="button" class="btn-ghost" id="recentCancelButton" hidden>取消编辑</button>
+              <span class="status-note" id="recentFormStatus"></span>
+            </div>
+          </form>
+        </section>
+
+        <aside class="section-card glass-panel tips-card" data-hover-pop>
+          <div class="section-head compact">
+            <div>
+              <h2>使用方式</h2>
+              <p>把弹性事项留在这里，不要硬塞进当天清单。</p>
+            </div>
+          </div>
+          <ul class="tips-list">
+            <li>这里不是当天待办，用来承接仍在变化的事项。</li>
+            <li>用“本周 / 下周 / 本月 / 未排期”表达大致时间窗口。</li>
+            <li>区块只表示当前状态，不需要像日任务一样定死时间。</li>
+            <li>不再需要时可以直接删除，仍会保留短时间撤销。</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 2;">
+        <div class="section-head compact">
+          <div>
+            <h2>时间窗口筛选</h2>
+            <p id="filterSummaryText">按窗口查看未来 30 天里仍在变化中的事项。</p>
+          </div>
+        </div>
+        <div class="filter-tabs" id="recentFilterTabs">
+          <button class="filter-tab active" type="button" data-filter="all">全部</button>
+          <button class="filter-tab" type="button" data-filter="this_week">本周</button>
+          <button class="filter-tab" type="button" data-filter="next_week">下周</button>
+          <button class="filter-tab" type="button" data-filter="this_month">本月</button>
+          <button class="filter-tab" type="button" data-filter="unscheduled">未排期</button>
+        </div>
+      </section>
+
+      <section class="lane-grid" data-motion-stage style="--motion-order: 3;">
+        <article class="lane-card glass-panel">
+          <div class="lane-head">
+            <div>
+              <p class="lane-eyebrow">Lane 01</p>
+              <h3>本周关注</h3>
+              <p>最近几天想盯住，但还没拆成日任务的事。</p>
+            </div>
+            <span class="lane-count" id="laneCountFocus">0</span>
+          </div>
+          <div class="recent-lane-list" id="recentLaneFocus"></div>
+        </article>
+
+        <article class="lane-card glass-panel">
+          <div class="lane-head">
+            <div>
+              <p class="lane-eyebrow">Lane 02</p>
+              <h3>进行中</h3>
+              <p>已经在推进，但细节还会继续变化。</p>
+            </div>
+            <span class="lane-count" id="laneCountInProgress">0</span>
+          </div>
+          <div class="recent-lane-list" id="recentLaneInProgress"></div>
+        </article>
+
+        <article class="lane-card glass-panel">
+          <div class="lane-head">
+            <div>
+              <p class="lane-eyebrow">Lane 03</p>
+              <h3>等待中</h3>
+              <p>依赖别人、结果或时机，先放在这里盯进度。</p>
+            </div>
+            <span class="lane-count" id="laneCountWaiting">0</span>
+          </div>
+          <div class="recent-lane-list" id="recentLaneWaiting"></div>
+        </article>
+
+        <article class="lane-card glass-panel">
+          <div class="lane-head">
+            <div>
+              <p class="lane-eyebrow">Lane 04</p>
+              <h3>以后再看</h3>
+              <p>先收起来，暂时不急着投入日程。</p>
+            </div>
+            <span class="lane-count" id="laneCountLater">0</span>
+          </div>
+          <div class="recent-lane-list" id="recentLaneLater"></div>
+        </article>
+      </section>
+    </main>
+  </div>
+
+  <script src="scripts/motion.js"></script>
+  <script src="scripts/recent.js"></script>
+</body>
+</html>

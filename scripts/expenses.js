@@ -75,7 +75,7 @@ const ExpensesApp = (() => {
       if (!id) return;
 
       if (button.dataset.action === "edit") editExpenseRecord(id);
-      if (button.dataset.action === "delete") deleteExpenseRecord(id);
+      if (button.dataset.action === "delete") deleteExpenseRecord(id, button);
     });
   }
 
@@ -259,13 +259,14 @@ const ExpensesApp = (() => {
           <span>切换时间范围或者新增一笔消费后，这里会自动出现记录列表。</span>
         </div>
       `;
+      window.PageMotion?.reconcilePendingRemovals?.();
       return;
     }
 
     container.innerHTML = sortedRecords.map(record => {
       const category = getCategoryById(record.categoryId);
       return `
-        <article class="record-item" data-hover-pop>
+        <article class="record-item" data-record-id="${escapeAttribute(record.id)}">
           <div class="record-main">
             <div class="record-top">
               <span class="record-category">
@@ -287,6 +288,8 @@ const ExpensesApp = (() => {
         </article>
       `;
     }).join("");
+
+    window.PageMotion?.reconcilePendingRemovals?.();
   }
 
   function saveExpenseRecord() {
@@ -353,17 +356,63 @@ const ExpensesApp = (() => {
     document.getElementById("expenseAmountInput")?.focus();
   }
 
-  function deleteExpenseRecord(id) {
-    if (!confirm("确定删除这条消费记录吗？")) return;
-
-    const nextStore = cloneStore(state.store);
-    nextStore.records = nextStore.records.filter(record => record.id !== id);
-    state.store = saveExpenseStore(nextStore);
-    renderAll({ resetForm: false });
-
-    if (getValue("expenseEditingId") === id) {
-      resetExpenseForm();
+  function findExpenseDeleteElement(id, trigger) {
+    if (trigger && typeof trigger.closest === "function") {
+      const container = trigger.closest(".record-item");
+      if (container) return container;
     }
+
+    return document.querySelector(`[data-record-id="${id}"]`) || null;
+  }
+
+  function deleteExpenseRecord(id, trigger) {
+    const recordIndex = state.store.records.findIndex(item => item.id === id);
+    if (recordIndex < 0) return;
+
+    const snapshot = { ...state.store.records[recordIndex] };
+    const wasEditing = getValue("expenseEditingId") === id;
+    const deleteElement = findExpenseDeleteElement(id, trigger);
+    const label = snapshot.note || [formatDateLabel(snapshot.date), formatCurrency(snapshot.amount)].filter(Boolean).join(" ");
+
+    const removeRecord = () => {
+      const nextStore = cloneStore(state.store);
+      nextStore.records = nextStore.records.filter(record => record.id !== id);
+      state.store = saveExpenseStore(nextStore);
+      renderAll({ resetForm: false });
+
+      if (wasEditing) {
+        resetExpenseForm();
+      }
+    };
+
+    const restoreRecord = () => {
+      if (state.store.records.some(record => record.id === id)) return;
+
+      const nextStore = cloneStore(state.store);
+      const nextRecords = nextStore.records.slice();
+      nextRecords.splice(Math.min(recordIndex, nextRecords.length), 0, { ...snapshot });
+      nextStore.records = nextRecords;
+      state.store = saveExpenseStore(nextStore);
+      renderAll({ resetForm: false });
+
+      if (wasEditing) {
+        editExpenseRecord(id);
+      }
+    };
+
+    if (window.PageMotion?.removeWithUndo) {
+      PageMotion.removeWithUndo({
+        key: `expense:${id}`,
+        element: deleteElement,
+        label: label || formatCurrency(snapshot.amount),
+        remove: removeRecord,
+        restore: restoreRecord,
+        timeoutMs: 2200
+      });
+      return;
+    }
+
+    removeRecord();
   }
 
   function saveCustomCategory() {

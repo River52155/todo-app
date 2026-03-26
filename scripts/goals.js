@@ -133,7 +133,7 @@ const GoalsApp = (() => {
 
       if (!id) return;
       if (action === "edit") editMilestone(horizon, id);
-      if (action === "delete") deleteMilestone(horizon, id);
+      if (action === "delete") deleteMilestone(horizon, id, button);
       if (action === "progress") updateMilestoneProgress(horizon, id);
     });
 
@@ -162,9 +162,11 @@ const GoalsApp = (() => {
     const render = () => {
       if (route === DEFAULT_ROUTE) {
         renderOverviewView(store);
-        return;
+      } else {
+        renderDetailView(route, store);
       }
-      renderDetailView(route, store);
+
+      window.PageMotion?.reconcilePendingRemovals?.();
     };
 
     if (!shouldAnimate) {
@@ -540,7 +542,7 @@ const GoalsApp = (() => {
   function renderMilestonesMarkup(milestones) {
     if (!milestones.length) {
       return `
-        <div class="empty-state" data-hover-pop>
+        <div class="empty-state">
           <strong>还没有里程碑</strong>
           <span>先拆出 3 到 5 个关键阶段，你的长期目标会更容易推进。</span>
         </div>
@@ -555,7 +557,7 @@ const GoalsApp = (() => {
       const motionAttr = createMotionItemAttr(index, 6);
 
       return `
-        <article class="milestone-card ${milestone.completed ? "completed" : ""}" data-hover-pop ${motionAttr}>
+        <article class="milestone-card ${milestone.completed ? "completed" : ""}" data-milestone-id="${escapeAttribute(milestone.id)}" ${motionAttr}>
           <div class="milestone-top">
             <div>
               <h3 class="milestone-title">${escapeHtml(milestone.title || "未命名里程碑")}</h3>
@@ -642,12 +644,64 @@ const GoalsApp = (() => {
     setStatus("milestoneFormStatus", `正在编辑：${milestone.title}`, true);
   }
 
-  function deleteMilestone(horizon, id) {
-    if (!confirm("确定删除这个里程碑吗？")) return;
+  function findMilestoneDeleteElement(id, trigger) {
+    if (trigger && typeof trigger.closest === "function") {
+      const container = trigger.closest(".milestone-card");
+      if (container) return container;
+    }
+
+    return shellState.host?.querySelector(`[data-milestone-id="${id}"]`) || null;
+  }
+
+  function deleteMilestone(horizon, id, trigger) {
     const store = getGoalStore();
-    store[horizon].milestones = store[horizon].milestones.filter(item => item.id !== id);
-    saveGoalStore(store);
-    renderCurrentRoute({ animate: false });
+    const milestoneIndex = store[horizon].milestones.findIndex(item => item.id === id);
+    if (milestoneIndex < 0) return;
+
+    const snapshot = { ...store[horizon].milestones[milestoneIndex] };
+    const wasEditing = toText(getValue("milestoneEditingId")) === id;
+    const deleteElement = findMilestoneDeleteElement(id, trigger);
+
+    const removeMilestone = () => {
+      const nextStore = getGoalStore();
+      nextStore[horizon].milestones = nextStore[horizon].milestones.filter(item => item.id !== id);
+      saveGoalStore(nextStore);
+      renderCurrentRoute({ animate: false });
+    };
+
+    const restoreMilestone = () => {
+      const nextStore = getGoalStore();
+      if (nextStore[horizon].milestones.some(item => item.id === id)) return;
+
+      const nextMilestones = nextStore[horizon].milestones.slice();
+      nextMilestones.splice(Math.min(milestoneIndex, nextMilestones.length), 0, { ...snapshot });
+      nextStore[horizon].milestones = nextMilestones;
+      saveGoalStore(nextStore);
+
+      if (wasEditing) {
+        replaceRoute(horizon);
+      }
+
+      renderCurrentRoute({ animate: false });
+
+      if (wasEditing) {
+        editMilestone(horizon, id);
+      }
+    };
+
+    if (window.PageMotion?.removeWithUndo) {
+      PageMotion.removeWithUndo({
+        key: `milestone:${horizon}:${id}`,
+        element: deleteElement,
+        label: snapshot.title || "\u672a\u547d\u540d\u91cc\u7a0b\u7891",
+        remove: removeMilestone,
+        restore: restoreMilestone,
+        timeoutMs: 2200
+      });
+      return;
+    }
+
+    removeMilestone();
   }
 
   function updateMilestoneProgress(horizon, id) {

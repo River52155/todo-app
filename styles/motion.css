@@ -1,0 +1,402 @@
+﻿:root {
+  --motion-fast: 190ms;
+  --motion-base: 280ms;
+  --motion-slow: 380ms;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-shift-sm: 10px;
+  --motion-shift-md: 18px;
+  --hover-pop-ms: 460ms;
+  --hover-lift: -5px;
+  --hover-rest-lift: -1px;
+  --hover-pop-shadow: 0 14px 26px rgba(15, 23, 42, 0.16);
+}
+
+html.motion-enabled body {
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    transform var(--motion-base) var(--motion-ease),
+    filter var(--motion-base) var(--motion-ease);
+}
+
+html.motion-enabled body.page-leaving {
+  opacity: 0;
+  transform: translateY(var(--motion-shift-sm));
+  filter: saturate(0.98);
+}
+
+html.motion-enabled [data-motion-stage],
+html.motion-enabled [data-motion-item] {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+html.motion-enabled body.page-ready [data-motion-stage] {
+  animation: motion-stage-in var(--motion-slow) var(--motion-ease) both;
+  animation-delay: calc(var(--motion-order, 0) * 72ms);
+}
+
+html.motion-enabled body.page-ready [data-motion-item] {
+  animation: motion-item-in var(--motion-base) var(--motion-ease) both;
+  animation-delay: calc(150ms + (var(--motion-item-order, 0) * 46ms));
+}
+
+html.motion-enabled .motion-swap,
+html.motion-enabled .motion-section {
+  will-change: opacity, transform;
+  backface-visibility: hidden;
+}
+
+html.motion-enabled .motion-swap {
+  transition:
+    opacity var(--motion-fast) var(--motion-ease),
+    transform var(--motion-fast) var(--motion-ease),
+    filter var(--motion-fast) var(--motion-ease);
+}
+
+html.motion-enabled .motion-swap.is-switching-out {
+  opacity: 0;
+  transform: translateY(var(--motion-shift-sm));
+  filter: saturate(0.98);
+}
+
+html.motion-enabled .motion-swap.is-switching-in {
+  animation: motion-swap-in var(--motion-base) var(--motion-ease) both;
+}
+
+html.motion-enabled .motion-section {
+  transition:
+    opacity var(--motion-base) var(--motion-ease),
+    transform var(--motion-base) var(--motion-ease),
+    filter var(--motion-base) var(--motion-ease);
+}
+
+html.motion-enabled .motion-section.is-hiding,
+html.motion-enabled .motion-section.is-hidden,
+html.motion-enabled .motion-section.is-revealing {
+  opacity: 0;
+  transform: translateY(calc(var(--motion-shift-sm) * -1));
+  filter: saturate(0.98);
+}
+
+html.motion-enabled .motion-section.is-visible,
+html.motion-enabled .motion-section:not(.is-hidden):not(.is-hiding):not(.is-revealing) {
+  opacity: 1;
+  transform: translateY(0);
+  filter: none;
+}
+
+html.motion-enabled .motion-section[hidden] {
+  display: none !important;
+}
+
+@keyframes motion-stage-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--motion-shift-md));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-item-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes motion-swap-in {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+    filter: saturate(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+    filter: none;
+  }
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html.motion-enabled [data-hover-pop] {
+    will-change: transform, box-shadow, filter;
+    backface-visibility: hidden;
+    transition:
+      transform var(--motion-base) var(--motion-ease),
+      box-shadow var(--motion-base) var(--motion-ease),
+      filter var(--motion-base) var(--motion-ease);
+    transform: translate3d(0, 0, 0);
+  }
+
+  html.motion-enabled [data-hover-pop].is-hover-popping {
+    animation: hover-pop var(--hover-pop-ms) var(--motion-ease) both;
+  }
+
+  html.motion-enabled [data-hover-pop]:hover {
+    transform: translate3d(0, var(--hover-rest-lift), 0);
+    box-shadow: var(--hover-pop-shadow);
+    filter: brightness(1.015) saturate(1.02);
+  }
+}
+
+@keyframes hover-pop {
+  0% {
+    transform: translate3d(0, 0, 0);
+  }
+  42% {
+    transform: translate3d(0, var(--hover-lift), 0);
+  }
+  72% {
+    transform: translate3d(0, 0, 0);
+  }
+  100% {
+    transform: translate3d(0, var(--hover-rest-lift), 0);
+  }
+}
+
+html.motion-enabled .motion-remove-layer {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+  z-index: 9996;
+}
+
+html.motion-enabled .motion-remove-shell {
+  position: fixed;
+  overflow: hidden;
+  pointer-events: none;
+  transform: translateZ(0);
+  border-radius: var(--ghost-radius, 16px);
+}
+
+html.motion-enabled .motion-remove-ghost {
+  width: 100%;
+  height: 100%;
+  border-radius: inherit;
+  overflow: hidden;
+  box-shadow:
+    0 10px 24px rgba(2, 8, 23, 0.22),
+    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+html.motion-enabled .motion-remove-ghost-copy,
+html.motion-enabled .motion-remove-ghost-copy * {
+  pointer-events: none !important;
+}
+
+html.motion-enabled .motion-remove-ghost-copy {
+  width: 100%;
+  height: 100%;
+  opacity: 0.92;
+  animation: none !important;
+  transition: none !important;
+}
+
+html.motion-enabled .motion-remove-shell.is-animating .motion-remove-ghost {
+  animation: motion-remove-ghost-out 120ms linear both;
+}
+
+html.motion-enabled .motion-remove-shell.is-reduced.is-animating .motion-remove-ghost {
+  animation-duration: 80ms;
+}
+
+html.motion-enabled .motion-undo-host {
+  position: relative;
+  overflow: visible;
+}
+
+html.motion-enabled .motion-panel-undo-stack {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  width: min(240px, calc(100% - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 8;
+}
+
+html.motion-enabled .motion-panel-undo,
+html.motion-enabled .motion-fallback-undo {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  overflow: hidden;
+  pointer-events: auto;
+  border-radius: 12px;
+  border: 1px solid rgba(191, 219, 254, 0.16);
+  background: linear-gradient(160deg, rgba(15, 23, 42, 0.88), rgba(30, 41, 59, 0.76));
+  box-shadow: 0 10px 24px rgba(2, 8, 23, 0.22);
+  backdrop-filter: blur(14px);
+  opacity: 0;
+  transition: opacity var(--motion-fast) var(--motion-ease);
+}
+
+html.motion-enabled .motion-panel-undo {
+  min-height: 44px;
+  padding: 9px 11px 11px;
+}
+
+html.motion-enabled .motion-panel-undo.is-visible,
+html.motion-enabled .motion-fallback-undo.is-visible {
+  opacity: 1;
+}
+
+html.motion-enabled .motion-panel-undo.is-exiting,
+html.motion-enabled .motion-fallback-undo.is-exiting {
+  opacity: 0;
+}
+
+html.motion-enabled .motion-panel-undo-copy,
+html.motion-enabled .motion-fallback-undo-copy {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+html.motion-enabled .motion-panel-undo-badge {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  flex-shrink: 0;
+  background: linear-gradient(135deg, rgba(96, 165, 250, 0.95), rgba(129, 140, 248, 0.92));
+  box-shadow: 0 0 10px rgba(96, 165, 250, 0.38);
+}
+
+html.motion-enabled .motion-panel-undo-label,
+html.motion-enabled .motion-fallback-undo-label {
+  color: #f8fbff;
+  font-size: 13px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+html.motion-enabled .motion-panel-undo-action,
+html.motion-enabled .motion-fallback-undo-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  min-width: 52px;
+  padding: 7px 11px;
+  border: 1px solid rgba(191, 219, 254, 0.18);
+  border-radius: 999px;
+  background: rgba(125, 211, 252, 0.12);
+  color: #e0f2fe;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background var(--motion-fast) var(--motion-ease),
+    border-color var(--motion-fast) var(--motion-ease);
+}
+
+html.motion-enabled .motion-panel-undo-action:hover,
+html.motion-enabled .motion-fallback-undo-action:hover {
+  background: rgba(125, 211, 252, 0.2);
+  border-color: rgba(191, 219, 254, 0.28);
+}
+
+html.motion-enabled .motion-panel-undo-progress,
+html.motion-enabled .motion-fallback-undo-progress {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+html.motion-enabled .motion-panel-undo-progress-fill,
+html.motion-enabled .motion-fallback-undo-progress-fill {
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, rgba(224, 242, 254, 0.78), rgba(125, 211, 252, 0.82));
+  transform-origin: left center;
+  animation: motion-undo-progress var(--undo-duration, 2200ms) linear forwards;
+}
+
+html.motion-enabled .motion-fallback-stack {
+  position: fixed;
+  right: max(12px, env(safe-area-inset-right));
+  bottom: max(12px, env(safe-area-inset-bottom));
+  width: min(210px, calc(100vw - 24px));
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  pointer-events: none;
+  z-index: 9997;
+}
+
+html.motion-enabled .motion-fallback-undo {
+  min-height: 40px;
+  padding: 9px 10px 11px;
+}
+
+@keyframes motion-remove-ghost-out {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+@keyframes motion-undo-progress {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --motion-fast: 1ms;
+    --motion-base: 1ms;
+    --motion-slow: 1ms;
+    --motion-shift-sm: 0px;
+    --motion-shift-md: 0px;
+    --hover-pop-ms: 1ms;
+    --hover-lift: 0px;
+    --hover-rest-lift: 0px;
+  }
+
+  html.motion-enabled body,
+  html.motion-enabled [data-motion-stage],
+  html.motion-enabled [data-motion-item],
+  html.motion-enabled .motion-swap,
+  html.motion-enabled .motion-section,
+  html.motion-enabled [data-hover-pop],
+  html.motion-enabled .motion-panel-undo,
+  html.motion-enabled .motion-fallback-undo,
+  html.motion-enabled .motion-remove-ghost,
+  html.motion-enabled .motion-remove-ghost-copy {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    transition-duration: 1ms !important;
+    transform: none !important;
+    filter: none !important;
+  }
+
+  html.motion-enabled [data-hover-pop]:hover,
+  html.motion-enabled [data-hover-pop].is-hover-popping {
+    box-shadow: none !important;
+  }
+}
