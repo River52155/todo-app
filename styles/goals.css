@@ -70,6 +70,12 @@ select {
   font: inherit;
 }
 
+input,
+textarea,
+select {
+  color-scheme: dark;
+}
+
 button {
   border: none;
 }
@@ -678,10 +684,31 @@ button {
   padding: 12px 14px;
   border-radius: 12px;
   border: 1px solid rgba(255, 255, 255, 0.12);
-  background: rgba(255, 255, 255, 0.08);
+  background: rgba(12, 18, 30, 0.88);
+  background-color: rgba(12, 18, 30, 0.88);
   color: var(--text-main);
   resize: vertical;
   min-height: 48px;
+}
+
+.field select {
+  appearance: none;
+  background-image:
+    linear-gradient(45deg, transparent 50%, rgba(226, 232, 240, 0.92) 50%),
+    linear-gradient(135deg, rgba(226, 232, 240, 0.92) 50%, transparent 50%);
+  background-position:
+    calc(100% - 20px) calc(50% - 2px),
+    calc(100% - 14px) calc(50% - 2px);
+  background-size: 6px 6px, 6px 6px;
+  background-repeat: no-repeat;
+  padding-right: 40px;
+}
+
+.field select option,
+.field select optgroup {
+  background: #101826;
+  background-color: #101826;
+  color: #f7fafc;
 }
 
 .field textarea {
@@ -693,12 +720,18 @@ button {
   grid-column: 1 / -1;
 }
 
+.field input::placeholder,
+.field textarea::placeholder {
+  color: #8ea2b6;
+}
+
 .field input:focus,
 .field textarea:focus,
 .field select:focus {
   outline: none;
   border-color: rgba(125, 211, 252, 0.54);
-  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.12);
+  box-shadow: 0 0 0 3px rgba(125, 211, 252, 0.1);
+  background-color: rgba(14, 22, 36, 0.96);
 }
 
 .form-note,

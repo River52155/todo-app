@@ -9,23 +9,23 @@
 </head>
 <body>
   <div class="shell">
-    <header class="page-header glass-panel" data-motion-stage style="--motion-order: 0;">
-                  <nav class="page-nav">
+    <header class="page-header page-header--compact glass-panel" data-motion-stage style="--motion-order: 0;">
+      <nav class="page-nav">
         <a class="nav-link" href="index.html" data-hover-pop>每日计划</a>
         <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
         <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
+        <a class="nav-link" href="budget.html" data-hover-pop>月度花销</a>
         <a class="nav-link active" href="expenses.html" data-hover-pop>消费记录</a>
       </nav>
 
-      <div class="hero">
+      <div class="hero hero--compact">
         <div class="hero-copy" data-hover-pop>
           <p class="eyebrow">Expense tracker</p>
-          <h1 class="hero-title">把每天的消费记下来，让周、月、年统计自动长出来。</h1>
+          <h1 class="hero-title">打开就能继续记今天花了多少。</h1>
           <p class="hero-description">
-            这里专门记录消费。你只要填写金额、日期、分类和备注，页面会自动帮你汇总今天、本周、本月、本年的支出，
-            同时给出趋势和分类构成。
+            这个页面只负责真实消费记录，不再重复月度预估。
+            你记完一笔之后，今天、本周、本月、本年的统计会自动更新。
           </p>
-          <div class="hero-highlight">📌 消费数据独立保存，不会影响每日任务和长期目标。</div>
           <div class="hero-stats">
             <div class="stat-card">
               <div class="stat-number" id="heroRangeTotal">¥0.00</div>
@@ -41,31 +41,50 @@
             </div>
           </div>
         </div>
-
-        <div class="hero-visual" data-hover-pop>
-          <div class="hero-visual-head">
-            <span id="heroVisualRange">本月分类构成</span>
-            <strong id="heroTopCategory">暂无消费记录</strong>
-          </div>
-          <div class="hero-visual-body">
-            <div class="donut-chart" id="heroDonutChart">
-              <div class="donut-inner">
-                <strong id="heroDonutValue">¥0.00</strong>
-                <span id="heroDonutCaption">本月总消费</span>
-              </div>
-            </div>
-            <div class="hero-visual-meta" id="heroVisualMeta"></div>
-          </div>
-        </div>
       </div>
     </header>
 
     <main class="page-content">
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 1;">
+      <section class="section-card glass-panel quick-entry-section" data-motion-stage style="--motion-order: 1;">
+        <form id="expenseForm" data-hover-pop>
+          <div class="section-head">
+            <div>
+              <h2>快速记一笔</h2>
+              <p>先把今天这笔记下来。编辑已有记录时，表单会自动切换到编辑状态。</p>
+            </div>
+          </div>
+          <input id="expenseEditingId" type="hidden" />
+          <div class="form-grid">
+            <div class="field">
+              <label for="expenseAmountInput">金额</label>
+              <input id="expenseAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：18.50" />
+            </div>
+            <div class="field">
+              <label for="expenseDateInput">日期</label>
+              <input id="expenseDateInput" type="date" />
+            </div>
+            <div class="field full">
+              <label for="expenseCategoryInput">分类</label>
+              <select id="expenseCategoryInput"></select>
+            </div>
+            <div class="field full">
+              <label for="expenseNoteInput">备注</label>
+              <textarea id="expenseNoteInput" placeholder="例如：早餐、地铁、奶茶、聚餐"></textarea>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-primary" type="submit" id="expenseSubmitLabel">保存消费</button>
+            <button class="btn-ghost" type="button" id="cancelExpenseEdit" hidden>取消编辑</button>
+            <span class="status-note" id="expenseFormStatus"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 2;">
         <div class="section-head">
           <div>
-            <h2>自动统计仪表盘</h2>
-            <p>这四个统计始终固定展示今天、本周、本月、本年的消费总额，方便你随时看全局。</p>
+            <h2>自动统计</h2>
+            <p>始终固定展示今天、本周、本月、本年的消费总额。</p>
           </div>
         </div>
         <div class="kpi-grid">
@@ -88,11 +107,11 @@
         </div>
       </section>
 
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 2;">
+      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 3;">
         <div class="section-head">
           <div>
-            <h2>时间范围</h2>
-            <p>默认看本月，也可以切到今日、本周、本年，图表和记录列表会自动联动。</p>
+            <h2>查看范围</h2>
+            <p>默认看本月，也可以切到今天、本周、本年。</p>
           </div>
         </div>
         <div class="range-tabs" id="rangeTabs">
@@ -100,72 +119,6 @@
           <button class="range-tab" type="button" data-range="week">本周</button>
           <button class="range-tab active" type="button" data-range="month">本月</button>
           <button class="range-tab" type="button" data-range="year">本年</button>
-        </div>
-      </section>
-
-      <section class="editor-grid" data-motion-stage style="--motion-order: 3;">
-        <div class="section-card glass-panel">
-          <form id="expenseForm" data-hover-pop>
-            <div class="section-head">
-              <div>
-                <h2>新增消费</h2>
-                <p>金额会自动保留两位小数。编辑现有记录时，表单会切换成编辑状态。</p>
-              </div>
-            </div>
-            <input id="expenseEditingId" type="hidden" />
-            <div class="form-grid">
-              <div class="field">
-                <label for="expenseAmountInput">金额</label>
-                <input id="expenseAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：28.50" />
-              </div>
-              <div class="field">
-                <label for="expenseDateInput">日期</label>
-                <input id="expenseDateInput" type="date" />
-              </div>
-              <div class="field full">
-                <label for="expenseCategoryInput">分类</label>
-                <select id="expenseCategoryInput"></select>
-              </div>
-              <div class="field full">
-                <label for="expenseNoteInput">备注</label>
-                <textarea id="expenseNoteInput" placeholder="例如：午饭、地铁、买书、生活用品"></textarea>
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn-primary" type="submit" id="expenseSubmitLabel">保存消费</button>
-              <button class="btn-ghost" type="button" id="cancelExpenseEdit" hidden>取消编辑</button>
-              <span class="status-note" id="expenseFormStatus"></span>
-            </div>
-          </form>
-        </div>
-
-        <div class="section-card glass-panel">
-          <form id="categoryForm" data-hover-pop>
-            <div class="section-head">
-              <div>
-                <h2>新增分类</h2>
-                <p>内置常用分类始终保留。这里只新增你自己的分类，不做删除或改名。</p>
-              </div>
-            </div>
-            <div class="form-grid">
-              <div class="field">
-                <label for="categoryNameInput">分类名称</label>
-                <input id="categoryNameInput" type="text" placeholder="例如：宠物、旅行、礼物" />
-              </div>
-              <div class="field">
-                <label for="categoryIconInput">图标</label>
-                <input id="categoryIconInput" type="text" maxlength="4" placeholder="例如：🐾" />
-              </div>
-              <div class="field full">
-                <label for="categoryColorInput">分类颜色</label>
-                <input id="categoryColorInput" type="color" value="#60a5fa" />
-              </div>
-            </div>
-            <div class="form-actions">
-              <button class="btn-secondary" type="submit">添加分类</button>
-              <span class="status-note" id="categoryFormStatus"></span>
-            </div>
-          </form>
         </div>
       </section>
 
@@ -201,6 +154,35 @@
       </section>
 
       <section class="section-card glass-panel" data-motion-stage style="--motion-order: 6;">
+        <form id="categoryForm" data-hover-pop>
+          <div class="section-head">
+            <div>
+              <h2>新增分类</h2>
+              <p>内置常用分类会保留，这里只追加你自己的分类。</p>
+            </div>
+          </div>
+          <div class="form-grid">
+            <div class="field">
+              <label for="categoryNameInput">分类名称</label>
+              <input id="categoryNameInput" type="text" placeholder="例如：宠物、旅行、礼物" />
+            </div>
+            <div class="field">
+              <label for="categoryIconInput">图标</label>
+              <input id="categoryIconInput" type="text" maxlength="4" placeholder="例如：🎁" />
+            </div>
+            <div class="field full">
+              <label for="categoryColorInput">分类颜色</label>
+              <input id="categoryColorInput" type="color" value="#60a5fa" />
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-secondary" type="submit">添加分类</button>
+            <span class="status-note" id="categoryFormStatus"></span>
+          </div>
+        </form>
+      </section>
+
+      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 7;">
         <div class="section-head">
           <div>
             <h2>记录列表</h2>
@@ -210,7 +192,7 @@
         <div class="records-list" id="recordsList"></div>
       </section>
 
-      <p class="footer-note" data-motion-stage style="--motion-order: 7;">
+      <p class="footer-note" data-motion-stage style="--motion-order: 8;">
         消费记录使用浏览器本地存储保存。如果你清空浏览器缓存或换设备，数据不会自动同步。
       </p>
     </main>

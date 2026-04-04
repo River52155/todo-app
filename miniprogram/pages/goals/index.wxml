@@ -1,0 +1,232 @@
+<view class="page-shell">
+  <view class="glass-card page-nav">
+    <view
+      wx:for="{{navItems}}"
+      wx:key="key"
+      class="nav-pill {{item.active ? 'nav-pill--active' : ''}}"
+      data-path="{{item.path}}"
+      bindtap="handleNavTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="glass-card hero-card">
+    <text class="eyebrow">Long-term Goals</text>
+    <text class="hero-title">把一年、三年和四年的目标拆成能持续推进的阶段。</text>
+    <text class="hero-desc">小程序版先把长线规划压缩成总览和单阶段详情。你可以写主目标、成功标准、备注，再用里程碑追踪推进节奏。</text>
+  </view>
+
+  <view class="stat-grid">
+    <view class="stat-card">
+      <text class="stat-number">{{overview.configuredGoals}}</text>
+      <text class="stat-label">已设置阶段</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{overview.totalMilestones}}</text>
+      <text class="stat-label">总里程碑</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{overview.averageProgress}}%</text>
+      <text class="stat-label">平均推进度</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">阶段切换</text>
+        <text class="section-subtitle">先看总览，再进入某个阶段细化主目标和里程碑。</text>
+      </view>
+    </view>
+
+    <view class="tab-row">
+      <view
+        wx:for="{{routeOptions}}"
+        wx:key="value"
+        class="tab-chip {{activeRoute === item.value ? 'tab-chip--active' : ''}}"
+        data-route="{{item.value}}"
+        bindtap="switchRoute"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{activeRoute === 'overview'}}">
+    <view class="glass-card section-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">目标总览</text>
+          <text class="section-subtitle">每张卡片对应一个阶段，方便你先扫一遍整体方向。</text>
+        </view>
+      </view>
+
+      <view class="card-list">
+        <view wx:for="{{overview.horizons}}" wx:key="horizon" class="overview-card">
+          <view class="row-between">
+            <view>
+              <text class="card-title">{{item.icon}} {{item.title}}</text>
+              <text class="card-copy">{{item.summary}}</text>
+            </view>
+            <button class="small-btn secondary-btn" data-route="{{item.horizon}}" bindtap="jumpToHorizon">查看</button>
+          </view>
+          <view class="meta-row">
+            <text class="meta-chip">{{item.label}}</text>
+            <text class="meta-chip">目标日期 {{item.targetDateLabel}}</text>
+            <text class="meta-chip">里程碑 {{item.stats.completed}} / {{item.stats.total}}</text>
+          </view>
+          <view class="progress-bar">
+            <view class="progress-fill" style="{{'width:' + item.stats.averageProgress + '%;'}}"></view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+
+  <block wx:else>
+    <view class="glass-card section-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">{{detail.meta.label}}</text>
+          <text class="section-subtitle">更新主目标卡，明确这个阶段想抵达的结果和判断标准。</text>
+        </view>
+      </view>
+
+      <view class="form-grid">
+        <view class="form-row">
+          <view>
+            <text class="field-label">图标</text>
+            <input class="text-input" maxlength="4" value="{{cardForm.icon}}" data-field="icon" bindinput="handleCardInput" />
+          </view>
+          <view>
+            <text class="field-label">目标日期</text>
+            <picker mode="date" value="{{cardForm.targetDate}}" bindchange="handleCardDateChange">
+              <view class="picker-input">{{cardForm.targetDate}}</view>
+            </picker>
+          </view>
+        </view>
+
+        <view>
+          <text class="field-label">主目标</text>
+          <input class="text-input" placeholder="例如：一年内形成稳定作品集和内容输出" value="{{cardForm.title}}" data-field="title" bindinput="handleCardInput" />
+        </view>
+
+        <view>
+          <text class="field-label">图片链接（选填）</text>
+          <input class="text-input" placeholder="https://example.com/goal-cover.jpg" value="{{cardForm.imageUrl}}" data-field="imageUrl" bindinput="handleCardInput" />
+        </view>
+
+        <view>
+          <text class="field-label">愿景描述</text>
+          <textarea class="textarea-input" placeholder="写下这个阶段最想达到的状态。" value="{{cardForm.summary}}" data-field="summary" bindinput="handleCardInput"></textarea>
+        </view>
+
+        <view>
+          <text class="field-label">成功标准</text>
+          <textarea class="textarea-input" placeholder="用可验证的标准定义它算不算达成。" value="{{cardForm.successCriteria}}" data-field="successCriteria" bindinput="handleCardInput"></textarea>
+        </view>
+
+        <view>
+          <text class="field-label">备注</text>
+          <textarea class="textarea-input" placeholder="记录资源、约束、提醒或策略。" value="{{cardForm.notes}}" data-field="notes" bindinput="handleCardInput"></textarea>
+        </view>
+
+        <view class="form-actions">
+          <button class="primary-btn" bindtap="saveGoalCard">保存主目标</button>
+        </view>
+
+        <text wx:if="{{statusText}}" class="status-text">{{statusText}}</text>
+      </view>
+    </view>
+
+    <view class="kv-grid">
+      <view class="kv-card">
+        <text class="muted-text">当前阶段</text>
+        <text class="kv-value">{{detail.meta.label}}</text>
+      </view>
+      <view class="kv-card">
+        <text class="muted-text">里程碑完成</text>
+        <text class="kv-value">{{detail.stats.completed}} / {{detail.stats.total}}</text>
+      </view>
+      <view class="kv-card">
+        <text class="muted-text">平均推进度</text>
+        <text class="kv-value">{{detail.stats.averageProgress}}%</text>
+      </view>
+    </view>
+
+    <view class="glass-card section-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">{{editingMilestoneId ? '编辑里程碑' : '添加里程碑'}}</text>
+          <text class="section-subtitle">把这个阶段拆成几个可跟踪的节点，后面只更新这些节点的进度。</text>
+        </view>
+      </view>
+
+      <view class="form-grid">
+        <view>
+          <text class="field-label">里程碑标题</text>
+          <input class="text-input" placeholder="例如：完成第一版作品集" value="{{milestoneForm.title}}" data-field="title" bindinput="handleMilestoneInput" />
+        </view>
+        <view>
+          <text class="field-label">截止日期</text>
+          <picker mode="date" value="{{milestoneForm.dueDate}}" bindchange="handleMilestoneDateChange">
+            <view class="picker-input {{!milestoneForm.dueDate ? 'picker-input--muted' : ''}}">{{milestoneForm.dueDate || '不设置也可以'}}</view>
+          </picker>
+        </view>
+        <view>
+          <text class="field-label">优先级</text>
+          <picker range="{{priorityOptions}}" range-key="label" bindchange="handleMilestonePriorityChange">
+            <view class="picker-input">{{milestoneForm.priority === 'high' ? '高优先级' : milestoneForm.priority === 'low' ? '低优先级' : '中优先级'}}</view>
+          </picker>
+        </view>
+        <view>
+          <text class="field-label">里程碑说明</text>
+          <textarea class="textarea-input" placeholder="写下这一阶段完成时，应该产出什么。" value="{{milestoneForm.description}}" data-field="description" bindinput="handleMilestoneInput"></textarea>
+        </view>
+
+        <view class="form-actions">
+          <button class="primary-btn" bindtap="saveMilestone">{{editingMilestoneId ? '保存里程碑' : '添加里程碑'}}</button>
+          <button wx:if="{{editingMilestoneId}}" class="ghost-btn" bindtap="cancelMilestoneEdit">取消编辑</button>
+        </view>
+
+        <text wx:if="{{milestoneStatusText}}" class="status-text">{{milestoneStatusText}}</text>
+      </view>
+    </view>
+
+    <view class="glass-card section-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">里程碑列表</text>
+          <text class="section-subtitle">进度到 100% 时会自动视为完成。</text>
+        </view>
+      </view>
+
+      <view wx:if="{{detail.milestones.length}}" class="card-list">
+        <view wx:for="{{detail.milestones}}" wx:key="id" class="milestone-card">
+          <text class="card-title">{{item.title}}</text>
+          <text wx:if="{{item.description}}" class="card-copy">{{item.description}}</text>
+          <view class="meta-row">
+            <text class="meta-chip">{{item.priorityLabel}}</text>
+            <text class="meta-chip">{{item.dueDateLabel}}</text>
+            <text class="meta-chip">进度 {{item.progress}}%</text>
+            <text wx:if="{{item.completed}}" class="meta-chip">完成于 {{item.completedAtLabel}}</text>
+          </view>
+          <view class="progress-bar">
+            <view class="progress-fill" style="{{'width:' + item.progress + '%;'}}"></view>
+          </view>
+          <view class="inline-actions">
+            <button class="small-btn secondary-btn" data-id="{{item.id}}" bindtap="updateMilestoneProgress">更新进度</button>
+            <button class="small-btn ghost-btn" data-id="{{item.id}}" bindtap="editMilestone">编辑</button>
+            <button class="small-btn danger-btn" data-id="{{item.id}}" bindtap="removeMilestone">删除</button>
+          </view>
+        </view>
+      </view>
+
+      <view wx:else class="empty-state">
+        <text class="empty-title">这个阶段还没有里程碑</text>
+        <text>先拆出 3 到 5 个关键节点，会比只写一个大目标更容易持续推进。</text>
+      </view>
+    </view>
+  </block>
+</view>

@@ -1,0 +1,217 @@
+<view class="page-shell">
+  <view class="glass-card page-nav">
+    <view
+      wx:for="{{navItems}}"
+      wx:key="key"
+      class="nav-pill {{item.active ? 'nav-pill--active' : ''}}"
+      data-path="{{item.path}}"
+      bindtap="handleNavTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="glass-card hero-card">
+    <text class="eyebrow">Daily Planner</text>
+    <text class="hero-title">把今天、这周和这个月的任务收在同一页。</text>
+    <text class="hero-desc">小程序版先保留最核心的录入、筛选、完成和历史查看流程，让你能直接在微信里快速记下和推进任务。</text>
+  </view>
+
+  <view class="stat-grid">
+    <view class="stat-card">
+      <text class="stat-number">{{stats.total}}</text>
+      <text class="stat-label">总任务</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{stats.completed}}</text>
+      <text class="stat-label">已完成</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{stats.pending}}</text>
+      <text class="stat-label">待完成</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">添加任务</text>
+        <text class="section-subtitle">先把任务记下来，再按今天、本周、本月查看。</text>
+      </view>
+    </view>
+
+    <view class="form-grid">
+      <view>
+        <text class="field-label">任务内容</text>
+        <input class="text-input" placeholder="例如：练习剪辑、背单词、上课复盘" value="{{form.title}}" data-field="title" bindinput="handleInput" />
+      </view>
+
+      <view class="form-row">
+        <view>
+          <text class="field-label">日期</text>
+          <picker mode="date" value="{{form.date}}" bindchange="handleDateChange">
+            <view class="picker-input">{{form.date}}</view>
+          </picker>
+        </view>
+        <view>
+          <text class="field-label">时间</text>
+          <picker mode="time" value="{{form.time}}" bindchange="handleTimeChange">
+            <view class="picker-input {{!form.time ? 'picker-input--muted' : ''}}">{{form.time || '全天 / 未设置'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view class="form-row">
+        <view>
+          <text class="field-label">地点</text>
+          <input class="text-input" placeholder="例如：教室、宿舍、公司" value="{{form.location}}" data-field="location" bindinput="handleInput" />
+        </view>
+        <view>
+          <text class="field-label">预计时长（分钟）</text>
+          <input class="text-input" type="number" placeholder="30" value="{{form.duration}}" data-field="duration" bindinput="handleInput" />
+        </view>
+      </view>
+
+      <view class="form-row">
+        <view>
+          <text class="field-label">优先级</text>
+          <picker range="{{priorityOptions}}" range-key="label" bindchange="handlePriorityChange">
+            <view class="picker-input">{{form.priority === 'high' ? '高优先级' : form.priority === 'low' ? '低优先级' : '中优先级'}}</view>
+          </picker>
+        </view>
+        <view>
+          <text class="field-label">任务类型</text>
+          <picker range="{{taskTypeOptions}}" range-key="label" bindchange="handleTaskTypeChange">
+            <view class="picker-input">{{form.taskType === 'weekly' ? '周任务' : form.taskType === 'monthly' ? '月任务' : form.taskType === 'halfYear' ? '阶段任务' : '日任务'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view>
+        <text class="field-label">结束日期（选填）</text>
+        <picker mode="date" value="{{form.taskEndDate}}" bindchange="handleTaskEndDateChange">
+          <view class="picker-input {{!form.taskEndDate ? 'picker-input--muted' : ''}}">{{form.taskEndDate || '不设置也可以'}}</view>
+        </picker>
+      </view>
+
+      <view class="form-actions">
+        <button class="primary-btn" bindtap="submitTask">添加任务</button>
+      </view>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">任务视图</text>
+        <text class="section-subtitle">切换当前任务和历史记录。</text>
+      </view>
+    </view>
+
+    <view class="tab-row">
+      <view
+        wx:for="{{viewOptions}}"
+        wx:for-item="viewItem"
+        wx:key="value"
+        class="tab-chip {{currentView === viewItem.value ? 'tab-chip--active' : ''}}"
+        data-view="{{viewItem.value}}"
+        bindtap="handleViewTap"
+      >
+        {{viewItem.label}}
+      </view>
+    </view>
+
+    <view class="tab-row lane-gap" wx:if="{{currentView === 'tasks'}}">
+      <view
+        wx:for="{{filterOptions}}"
+        wx:for-item="filterItem"
+        wx:key="value"
+        class="tab-chip {{currentFilter === filterItem.value ? 'tab-chip--active' : ''}}"
+        data-filter="{{filterItem.value}}"
+        bindtap="handleFilterTap"
+      >
+        {{filterItem.label}}
+      </view>
+    </view>
+  </view>
+
+  <block wx:if="{{currentView === 'tasks'}}">
+    <view wx:for="{{columns}}" wx:for-item="column" wx:key="key" class="glass-card section-card">
+      <view class="section-head">
+        <view>
+          <text class="section-title">{{column.label}}</text>
+          <text class="section-subtitle">当前共 {{column.count}} 条</text>
+        </view>
+      </view>
+
+      <block wx:if="{{column.groups.length}}">
+        <view wx:for="{{column.groups}}" wx:for-item="group" wx:key="date" class="group-block">
+          <view class="date-head">
+            <text class="date-label">{{group.label}}</text>
+            <text class="muted-text">{{group.fullDate}} {{group.weekday}}</text>
+          </view>
+
+          <view class="card-list">
+            <view wx:for="{{group.tasks}}" wx:for-item="task" wx:key="id" class="task-card">
+              <text class="card-title">{{task.title}}</text>
+              <view class="meta-row">
+                <text class="meta-chip">{{task.dateText}}</text>
+                <text class="meta-chip">{{task.timeText}}</text>
+                <text wx:if="{{task.location}}" class="meta-chip">{{task.location}}</text>
+                <text class="meta-chip">{{task.priorityLabel}}</text>
+                <text class="meta-chip">{{task.typeLabel}}</text>
+                <text wx:if="{{task.durationText}}" class="meta-chip">{{task.durationText}}</text>
+              </view>
+
+              <view wx:if="{{task.showProgress}}">
+                <view class="meta-row">
+                  <text class="meta-chip">进度 {{task.progressText}}</text>
+                </view>
+                <view class="progress-bar">
+                  <view class="progress-fill" style="{{'width:' + task.progress + '%;'}}"></view>
+                </view>
+              </view>
+
+              <view class="inline-actions">
+                <button class="small-btn secondary-btn" data-id="{{task.id}}" bindtap="markTaskDone">完成</button>
+                <button class="small-btn ghost-btn" data-id="{{task.id}}" bindtap="editTaskProgress">进度</button>
+                <button class="small-btn danger-btn" data-id="{{task.id}}" bindtap="removeTask">删除</button>
+              </view>
+            </view>
+          </view>
+        </view>
+      </block>
+
+      <view wx:else class="empty-state">
+        <text class="empty-title">{{column.emptyText}}</text>
+        <text>这里会只显示当前筛选范围内、尚未完成的任务。</text>
+      </view>
+    </view>
+  </block>
+
+  <view wx:elif="{{currentView === 'history'}}" class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">历史记录</text>
+        <text class="section-subtitle">已完成的任务会出现在这里。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{historyList.length}}" class="card-list">
+      <view wx:for="{{historyList}}" wx:key="id" class="task-card">
+        <text class="card-title">{{item.title}}</text>
+        <view class="meta-row">
+          <text class="meta-chip">{{item.dateText}}</text>
+          <text class="meta-chip">{{item.timeText}}</text>
+          <text class="meta-chip">{{item.priorityLabel}}</text>
+          <text class="meta-chip">完成于 {{item.completedTimeText}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <text class="empty-title">还没有历史任务</text>
+      <text>完成后的任务会自动进入历史记录，方便你回看最近的推进节奏。</text>
+    </view>
+  </view>
+</view>

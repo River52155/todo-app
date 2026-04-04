@@ -1,0 +1,4 @@
+.overview-card + .overview-card,
+.milestone-card + .milestone-card {
+  margin-top: 16rpx;
+}

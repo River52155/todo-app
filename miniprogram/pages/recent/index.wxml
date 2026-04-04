@@ -1,0 +1,129 @@
+<view class="page-shell">
+  <view class="glass-card page-nav">
+    <view
+      wx:for="{{navItems}}"
+      wx:key="key"
+      class="nav-pill {{item.active ? 'nav-pill--active' : ''}}"
+      data-path="{{item.path}}"
+      bindtap="handleNavTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="glass-card hero-card">
+    <text class="eyebrow">Recent Planning</text>
+    <text class="hero-title">把未来 30 天内还在变化的事项，放进一个弹性池。</text>
+    <text class="hero-desc">这里不是当天待办，也不是长期目标。更适合记录最近在关注什么、哪些事还在推进、哪些还在等待外部条件。</text>
+  </view>
+
+  <view class="stat-grid">
+    <view class="stat-card">
+      <text class="stat-number">{{stats.total}}</text>
+      <text class="stat-label">当前卡片</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{stats.focusCount}}</text>
+      <text class="stat-label">本周关注</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{stats.waitingCount}}</text>
+      <text class="stat-label">等待中</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">{{editingId ? '编辑近期计划' : '新增近期计划'}}</text>
+        <text class="section-subtitle">优先把事情记下来，再在几个区块之间移动。</text>
+      </view>
+    </view>
+
+    <view class="form-grid">
+      <view>
+        <text class="field-label">标题</text>
+        <input class="text-input" placeholder="例如：尝试稳定更新内容、联系老师确认安排" value="{{form.title}}" data-field="title" bindinput="handleInput" />
+      </view>
+
+      <view class="form-row">
+        <view>
+          <text class="field-label">时间窗口</text>
+          <picker range="{{windowOptions}}" range-key="label" bindchange="handleWindowChange">
+            <view class="picker-input">{{form.window === 'next_week' ? '下周' : form.window === 'this_month' ? '本月' : form.window === 'unscheduled' ? '未排期' : '本周'}}</view>
+          </picker>
+        </view>
+        <view>
+          <text class="field-label">所在区块</text>
+          <picker range="{{laneOptions}}" range-key="label" bindchange="handleLaneChange">
+            <view class="picker-input">{{form.lane === 'in_progress' ? '进行中' : form.lane === 'waiting' ? '等待中' : form.lane === 'later' ? '以后再看' : '本周关注'}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view>
+        <text class="field-label">备注</text>
+        <textarea class="textarea-input" placeholder="写下为什么关注它、下一步准备怎么推进、现在卡在哪。" value="{{form.note}}" data-field="note" bindinput="handleInput"></textarea>
+      </view>
+
+      <view class="form-actions">
+        <button class="primary-btn" bindtap="submitCard">{{editingId ? '保存修改' : '添加近期计划'}}</button>
+        <button wx:if="{{editingId}}" class="ghost-btn" bindtap="cancelEdit">取消编辑</button>
+      </view>
+
+      <text wx:if="{{statusText}}" class="status-text">{{statusText}}</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">窗口筛选</text>
+        <text class="section-subtitle">按本周、下周、本月、未排期过滤当前弹性事项。</text>
+      </view>
+    </view>
+
+    <view class="tab-row">
+      <view
+        wx:for="{{filterOptions}}"
+        wx:for-item="filterItem"
+        wx:key="value"
+        class="tab-chip {{currentFilter === filterItem.value ? 'tab-chip--active' : ''}}"
+        data-filter="{{filterItem.value}}"
+        bindtap="handleFilterTap"
+      >
+        {{filterItem.label}}
+      </view>
+    </view>
+  </view>
+
+  <view wx:for="{{lanes}}" wx:for-item="lane" wx:key="value" class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">{{lane.label}}</text>
+        <text class="section-subtitle">{{lane.summary}} · {{lane.count}} 条</text>
+      </view>
+    </view>
+
+    <view wx:if="{{lane.items.length}}" class="card-list">
+      <view wx:for="{{lane.items}}" wx:for-item="card" wx:key="id" class="recent-card">
+        <text class="card-title">{{card.title}}</text>
+        <text wx:if="{{card.note}}" class="card-copy">{{card.note}}</text>
+        <view class="meta-row">
+          <text class="meta-chip">{{card.windowLabel}}</text>
+          <text class="meta-chip">更新于 {{card.updatedLabel}}</text>
+        </view>
+        <view class="inline-actions">
+          <button class="small-btn secondary-btn" data-id="{{card.id}}" bindtap="editCard">编辑</button>
+          <button class="small-btn ghost-btn" data-id="{{card.id}}" bindtap="moveCard">切换区块</button>
+          <button class="small-btn danger-btn" data-id="{{card.id}}" bindtap="removeCard">删除</button>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <text class="empty-title">当前区块还没有内容</text>
+      <text>这里不是当天待办，而是给未来 30 天内还在变化的事项留一个缓冲区。</text>
+    </view>
+  </view>
+</view>

@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>月度花销</title>
+  <link rel="stylesheet" href="styles/budget.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
+</head>
+<body>
+  <div class="budget-shell" id="budgetDashboard">
+    <header class="page-header glass-panel" data-motion-stage style="--motion-order: 0;">
+      <nav class="page-nav">
+        <a class="nav-link" href="index.html" data-hover-pop>每日计划</a>
+        <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
+        <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
+        <a class="nav-link active" href="budget.html" data-hover-pop>月度花销</a>
+        <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
+      </nav>
+
+      <div class="hero hero--simple">
+        <div class="hero-copy">
+          <p class="eyebrow">Monthly spend</p>
+          <h1 class="hero-title">只看这个月还要花多少钱。</h1>
+          <p class="hero-description">
+            这里不做复杂预算，只记两类东西：固定项目模板，以及这个月临时会发生的事项。
+            实际已经花掉的钱，继续去“消费记录”里记。
+          </p>
+          <div class="hero-inline-metrics">
+            <div class="hero-inline-chip">
+              <span class="chip-label">当前月份</span>
+              <strong id="heroMonthLabel">2026 年 4 月</strong>
+            </div>
+            <div class="hero-inline-chip">
+              <span class="chip-label">待发生事项</span>
+              <strong id="heroPendingCount">0 项</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero-side">
+          <div class="hero-pulse-card">
+            <span class="hero-side-label">本月预计还要花</span>
+            <strong class="hero-side-value" id="heroPlannedTotal">¥0.00</strong>
+            <div class="hero-side-split">
+              <span>固定项目 <strong id="heroFixedSplit">¥0.00</strong></span>
+              <span>临时事项 <strong id="heroOneOffSplit">¥0.00</strong></span>
+            </div>
+          </div>
+          <div class="hero-balance-card">
+            <span class="hero-side-label">本月已记录消费</span>
+            <strong class="hero-side-balance" id="heroActualTotal">¥0.00</strong>
+            <p id="heroBalanceNote">真实支出来自消费记录页，这里只负责提前估算。</p>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <main class="page-content">
+      <section class="control-bar glass-panel" data-motion-stage style="--motion-order: 1;">
+        <div class="month-strip">
+          <button class="month-nav-btn" type="button" id="budgetPrevMonth">上个月</button>
+          <label class="month-select">
+            <span>月份</span>
+            <input id="budgetMonthInput" type="month" />
+          </label>
+          <button class="month-nav-btn" type="button" id="budgetNextMonth">下个月</button>
+        </div>
+
+        <div class="quick-actions">
+          <button class="btn-secondary" type="button" id="loadFixedTemplatesBtn">载入固定项目到本月</button>
+          <span class="status-note" id="budgetStatus"></span>
+        </div>
+      </section>
+
+      <section class="summary-grid" data-motion-stage style="--motion-order: 2;">
+        <article class="summary-card glass-panel" data-hover-pop>
+          <span class="summary-label">本月预计还要花</span>
+          <strong class="summary-value" id="summaryPlannedTotal">¥0.00</strong>
+          <p class="summary-note">只统计还处于待发生状态的项目。</p>
+        </article>
+        <article class="summary-card glass-panel" data-hover-pop>
+          <span class="summary-label">固定项目</span>
+          <strong class="summary-value" id="summaryFixedTotal">¥0.00</strong>
+          <p class="summary-note">从固定模板载入到当月后的预计金额。</p>
+        </article>
+        <article class="summary-card glass-panel" data-hover-pop>
+          <span class="summary-label">临时事项</span>
+          <strong class="summary-value" id="summaryOneOffTotal">¥0.00</strong>
+          <p class="summary-note">像剧本杀、住宿、聚餐这类一次性支出。</p>
+        </article>
+        <article class="summary-card glass-panel" data-hover-pop>
+          <span class="summary-label">本月已记录消费</span>
+          <strong class="summary-value" id="summaryActualTotal">¥0.00</strong>
+          <p class="summary-note">来自消费记录页的真实支出。</p>
+        </article>
+      </section>
+
+      <section class="planner-grid" data-motion-stage style="--motion-order: 3;">
+        <section class="section-card glass-panel">
+          <div class="section-head">
+            <div>
+              <h2>新增本月事项</h2>
+              <p>只记录这个月还没发生、但大概率会花的钱。</p>
+            </div>
+          </div>
+
+          <form id="monthPlanForm">
+            <input id="monthPlanEditingId" type="hidden" />
+            <div class="form-grid">
+              <div class="field">
+                <label for="monthPlanTitleInput">事项名称</label>
+                <input id="monthPlanTitleInput" type="text" placeholder="例如：12号剧本杀" />
+              </div>
+              <div class="field">
+                <label for="monthPlanAmountInput">预计金额</label>
+                <input id="monthPlanAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：356" />
+              </div>
+              <div class="field">
+                <label for="monthPlanDateInput">计划日期</label>
+                <input id="monthPlanDateInput" type="date" />
+              </div>
+              <div class="field">
+                <label for="monthPlanCategoryInput">分类</label>
+                <select id="monthPlanCategoryInput"></select>
+              </div>
+              <div class="field full">
+                <label for="monthPlanNoteInput">备注</label>
+                <textarea id="monthPlanNoteInput" placeholder="例如：朋友局、住宿、门票、具体用途"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit" id="monthPlanSubmitLabel">保存本月事项</button>
+              <button class="btn-ghost" type="button" id="cancelMonthPlanEdit" hidden>取消编辑</button>
+              <span class="status-note" id="monthPlanFormStatus"></span>
+            </div>
+          </form>
+
+          <div class="forecast-groups">
+            <div class="forecast-group-shell">
+              <div class="group-title-row">
+                <h3>本月预计清单</h3>
+                <span class="group-note" id="monthPlanSummary">当前月份还没有预计事项。</span>
+              </div>
+              <div class="forecast-items" id="monthPlanList"></div>
+            </div>
+          </div>
+        </section>
+
+        <section class="section-card glass-panel">
+          <div class="section-head">
+            <div>
+              <h2>固定项目模板</h2>
+              <p>例如每月吃饭、BTC 定投。模板不会自动跨月，要你手动载入到本月。</p>
+            </div>
+          </div>
+
+          <form id="fixedTemplateForm">
+            <input id="fixedTemplateEditingId" type="hidden" />
+            <div class="form-grid">
+              <div class="field">
+                <label for="fixedTemplateTitleInput">项目名称</label>
+                <input id="fixedTemplateTitleInput" type="text" placeholder="例如：每月吃饭" />
+              </div>
+              <div class="field">
+                <label for="fixedTemplateAmountInput">默认金额</label>
+                <input id="fixedTemplateAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：900" />
+              </div>
+              <div class="field">
+                <label for="fixedTemplateCategoryInput">分类</label>
+                <select id="fixedTemplateCategoryInput"></select>
+              </div>
+              <div class="field">
+                <label for="fixedTemplateRecurringDayInput">通常每月几号</label>
+                <input id="fixedTemplateRecurringDayInput" type="number" min="1" max="31" placeholder="可不填" />
+              </div>
+              <div class="field full">
+                <label for="fixedTemplateNoteInput">备注</label>
+                <textarea id="fixedTemplateNoteInput" placeholder="例如：餐费预算、BTC 定投额度、固定学费"></textarea>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button class="btn-secondary" type="submit" id="fixedTemplateSubmitLabel">保存固定项目</button>
+              <button class="btn-ghost" type="button" id="cancelFixedTemplateEdit" hidden>取消编辑</button>
+              <span class="status-note" id="fixedTemplateFormStatus"></span>
+            </div>
+          </form>
+
+          <div class="forecast-groups">
+            <div class="forecast-group-shell">
+              <div class="group-title-row">
+                <h3>固定项目模板列表</h3>
+                <span class="group-note" id="fixedTemplateSummary">你还没有固定项目模板。</span>
+              </div>
+              <div class="fixed-template-list" id="fixedTemplateList"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <p class="footer-note" data-motion-stage style="--motion-order: 4;">
+        月度花销页只做“预计会花多少钱”的记录。真实已经发生的支出，请继续去消费记录页登记。
+      </p>
+    </main>
+  </div>
+
+  <script src="scripts/motion.js"></script>
+  <script src="scripts/budget-store.js"></script>
+  <script src="scripts/budget.js"></script>
+</body>
+</html>

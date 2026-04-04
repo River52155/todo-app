@@ -22,6 +22,7 @@ const ExpensesApp = (() => {
   ];
   const state = {
     selectedRange: DEFAULT_RANGE,
+    selectedForecastMonth: getCurrentMonthKey(),
     store: null
   };
 
@@ -53,6 +54,31 @@ const ExpensesApp = (() => {
       renderRangeInsights({ animate: true });
     });
 
+    document.getElementById("forecastMonthInput")?.addEventListener("change", event => {
+      const nextMonth = normalizeMonthValue(event.target.value);
+      if (!nextMonth || nextMonth === state.selectedForecastMonth) {
+        event.target.value = state.selectedForecastMonth;
+        return;
+      }
+
+      state.selectedForecastMonth = nextMonth;
+      renderForecastSection();
+    });
+
+    document.getElementById("forecastPrevMonth")?.addEventListener("click", () => {
+      state.selectedForecastMonth = shiftMonth(state.selectedForecastMonth, -1);
+      renderForecastSection();
+    });
+
+    document.getElementById("forecastNextMonth")?.addEventListener("click", () => {
+      state.selectedForecastMonth = shiftMonth(state.selectedForecastMonth, 1);
+      renderForecastSection();
+    });
+
+    document.getElementById("loadFixedForecastBtn")?.addEventListener("click", () => {
+      loadFixedForecastTemplatesForCurrentMonth();
+    });
+
     document.getElementById("expenseForm")?.addEventListener("submit", event => {
       event.preventDefault();
       saveExpenseRecord();
@@ -62,9 +88,27 @@ const ExpensesApp = (() => {
       resetExpenseForm();
     });
 
+    document.getElementById("forecastItemForm")?.addEventListener("submit", event => {
+      event.preventDefault();
+      saveForecastItem();
+    });
+
+    document.getElementById("cancelForecastEdit")?.addEventListener("click", () => {
+      resetForecastForm();
+    });
+
     document.getElementById("categoryForm")?.addEventListener("submit", event => {
       event.preventDefault();
       saveCustomCategory();
+    });
+
+    document.getElementById("fixedForecastForm")?.addEventListener("submit", event => {
+      event.preventDefault();
+      saveFixedForecastTemplate();
+    });
+
+    document.getElementById("cancelFixedForecastEdit")?.addEventListener("click", () => {
+      resetFixedForecastForm();
     });
 
     document.getElementById("recordsList")?.addEventListener("click", event => {
@@ -77,6 +121,10 @@ const ExpensesApp = (() => {
       if (button.dataset.action === "edit") editExpenseRecord(id);
       if (button.dataset.action === "delete") deleteExpenseRecord(id, button);
     });
+
+    document.getElementById("forecastFixedList")?.addEventListener("click", handleForecastListClick);
+    document.getElementById("forecastOneOffList")?.addEventListener("click", handleForecastListClick);
+    document.getElementById("fixedForecastTemplatesList")?.addEventListener("click", handleFixedTemplateListClick);
   }
 
   function renderAll(options = {}) {
@@ -84,10 +132,13 @@ const ExpensesApp = (() => {
     renderCategoryOptions();
     renderKpis();
     renderHero();
+    renderForecastSection();
     renderRangeInsights({ animate: false });
 
     if (options.resetForm) {
       resetExpenseForm();
+      resetForecastForm();
+      resetFixedForecastForm();
       resetCategoryForm();
     }
   }
@@ -104,6 +155,133 @@ const ExpensesApp = (() => {
     setText("kpiWeekTotal", formatCurrency(totals.week));
     setText("kpiMonthTotal", formatCurrency(totals.month));
     setText("kpiYearTotal", formatCurrency(totals.year));
+  }
+
+  function renderForecastSection() {
+    syncForecastMonthInput();
+    renderForecastCategoryOptions();
+
+    const view = buildForecastMonthView(state.store, state.selectedForecastMonth);
+    setText("forecastTotalAmount", formatCurrency(view.stats.total));
+    setText("forecastFixedAmount", formatCurrency(view.stats.fixedTotal));
+    setText("forecastOneOffAmount", formatCurrency(view.stats.oneOffTotal));
+    setText("forecastActualAmount", formatCurrency(view.stats.actualTotal));
+    setText("forecastSummaryLabel", `${formatForecastMonthLabel(view.month)} 共 ${view.items.length} 项，预计支出 ${formatCurrency(view.stats.total)}`);
+    setText("fixedForecastSummaryLabel", view.fixedTemplates.length ? `当前有 ${view.fixedTemplates.length} 个固定项目模板，可手动载入到任意月份。` : "你还没有固定项目模板。");
+
+    renderForecastItems("forecastFixedList", view.groups.fixed, "fixed");
+    renderForecastItems("forecastOneOffList", view.groups.oneOff, "one_off");
+    renderFixedForecastTemplates(view.fixedTemplates);
+  }
+
+  function syncForecastMonthInput() {
+    setValue("forecastMonthInput", state.selectedForecastMonth);
+  }
+
+  function renderForecastCategoryOptions() {
+    renderSelectOptions("forecastCategoryInput");
+    renderSelectOptions("fixedForecastCategoryInput");
+  }
+
+  function renderSelectOptions(selectId, preferredValue = "") {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const currentValue = preferredValue || toText(select.value);
+    select.innerHTML = state.store.categories.map(category => `
+      <option value="${escapeAttribute(category.id)}">${escapeHtml(category.icon)} ${escapeHtml(category.name)}</option>
+    `).join("");
+
+    const nextValue = state.store.categories.some(category => category.id === currentValue)
+      ? currentValue
+      : state.store.categories[0]?.id || FALLBACK_CATEGORY_ID;
+
+    select.value = nextValue;
+  }
+
+  function renderForecastItems(containerId, items, kind) {
+    const container = document.getElementById(containerId);
+    if (!container) return;
+
+    if (!items.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <strong>${kind === "fixed" ? "这个月还没有固定项目" : "这个月还没有临时事项"}</strong>
+          <span>${kind === "fixed" ? "点击“载入固定项目到本月”后，模板会进入这里。" : "像剧本杀、住宿、聚餐这种一次性支出，先放到这里。"}
+          </span>
+        </div>
+      `;
+      window.PageMotion?.reconcilePendingRemovals?.();
+      return;
+    }
+
+    container.innerHTML = items.map(item => {
+      const note = item.note ? `<p class="forecast-item-note">${escapeHtml(item.note)}</p>` : "";
+      const recurring = item.kind === "fixed" ? `<span class="forecast-tag">${escapeHtml(item.recurringDayLabel)}</span>` : "";
+      return `
+        <article class="forecast-item ${item.status === "skipped" ? "is-skipped" : ""}" data-forecast-id="${escapeAttribute(item.id)}" data-forecast-month="${escapeAttribute(item.month)}">
+          <div class="forecast-item-top">
+            <div>
+              <h4 class="forecast-item-title">${escapeHtml(item.title)}</h4>
+              <div class="forecast-item-meta">
+                <span class="forecast-tag">${escapeHtml(item.category.icon)} ${escapeHtml(item.category.name)}</span>
+                <span class="forecast-tag">${escapeHtml(item.plannedDateLabel)}</span>
+                ${recurring}
+                <span class="forecast-status forecast-status--${escapeAttribute(item.status)}">${escapeHtml(getForecastStatusLabel(item.status))}</span>
+              </div>
+            </div>
+            <div class="forecast-item-amount">${formatCurrency(item.amount)}</div>
+          </div>
+          ${note}
+          <div class="forecast-item-actions">
+            <button class="btn-secondary btn-small" type="button" data-action="edit" data-id="${escapeAttribute(item.id)}">编辑</button>
+            <button class="btn-soft-success btn-small" type="button" data-action="apply-expense" data-id="${escapeAttribute(item.id)}">${item.status === "done" ? "再次预填消费" : "记为已支出"}</button>
+            <button class="btn-soft-warning btn-small" type="button" data-action="${item.status === "skipped" ? "restore" : "skip"}" data-id="${escapeAttribute(item.id)}">${item.status === "skipped" ? "恢复" : "标记跳过"}</button>
+            <button class="btn-danger btn-small" type="button" data-action="delete" data-id="${escapeAttribute(item.id)}">删除</button>
+          </div>
+        </article>
+      `;
+    }).join("");
+
+    window.PageMotion?.reconcilePendingRemovals?.();
+  }
+
+  function renderFixedForecastTemplates(templates) {
+    const container = document.getElementById("fixedForecastTemplatesList");
+    if (!container) return;
+
+    if (!templates.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <strong>还没有固定项目模板</strong>
+          <span>先把每月吃饭、BTC 定投、固定住宿这类项目建成模板，再按月手动载入。</span>
+        </div>
+      `;
+      window.PageMotion?.reconcilePendingRemovals?.();
+      return;
+    }
+
+    container.innerHTML = templates.map(item => `
+      <article class="forecast-template-item" data-fixed-forecast-id="${escapeAttribute(item.id)}">
+        <div class="forecast-template-top">
+          <div>
+            <h4 class="forecast-template-title">${escapeHtml(item.title)}</h4>
+            <div class="forecast-template-meta">
+              <span class="forecast-tag">${escapeHtml(item.category.icon)} ${escapeHtml(item.category.name)}</span>
+              <span class="forecast-tag">${item.recurringDay ? `通常每月 ${item.recurringDay} 号` : "未设置固定日期"}</span>
+            </div>
+          </div>
+          <div class="forecast-template-amount">${formatCurrency(item.amount)}</div>
+        </div>
+        <p class="forecast-template-note">${escapeHtml(item.note || "暂无备注")}</p>
+        <div class="forecast-template-actions">
+          <button class="btn-secondary btn-small" type="button" data-action="edit" data-id="${escapeAttribute(item.id)}">编辑</button>
+          <button class="btn-danger btn-small" type="button" data-action="delete" data-id="${escapeAttribute(item.id)}">删除</button>
+        </div>
+      </article>
+    `).join("");
+
+    window.PageMotion?.reconcilePendingRemovals?.();
   }
 
   function renderHero() {
@@ -365,6 +543,33 @@ const ExpensesApp = (() => {
     return document.querySelector(`[data-record-id="${id}"]`) || null;
   }
 
+  function findForecastDeleteElement(id, trigger) {
+    if (trigger && typeof trigger.closest === "function") {
+      const container = trigger.closest(".forecast-item");
+      if (container) return container;
+    }
+
+    return document.querySelector(`[data-forecast-id="${id}"]`) || null;
+  }
+
+  function findFixedForecastDeleteElement(id, trigger) {
+    if (trigger && typeof trigger.closest === "function") {
+      const container = trigger.closest(".forecast-template-item");
+      if (container) return container;
+    }
+
+    return document.querySelector(`[data-fixed-forecast-id="${id}"]`) || null;
+  }
+
+  function removeForecastItemFromStore(store, forecastId) {
+    Object.keys(store.forecastMonths || {}).forEach(month => {
+      store.forecastMonths[month] = store.forecastMonths[month].filter(item => item.id !== forecastId);
+      if (!store.forecastMonths[month].length) {
+        delete store.forecastMonths[month];
+      }
+    });
+  }
+
   function deleteExpenseRecord(id, trigger) {
     const recordIndex = state.store.records.findIndex(item => item.id === id);
     if (recordIndex < 0) return;
@@ -415,6 +620,361 @@ const ExpensesApp = (() => {
     removeRecord();
   }
 
+  function handleForecastListClick(event) {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+
+    const id = button.dataset.id;
+    if (!id) return;
+
+    if (button.dataset.action === "edit") editForecastItem(id);
+    if (button.dataset.action === "apply-expense") applyForecastItemToExpenseForm(id);
+    if (button.dataset.action === "skip") updateForecastItemStatus(id, "skipped");
+    if (button.dataset.action === "restore") updateForecastItemStatus(id, "planned");
+    if (button.dataset.action === "delete") deleteForecastItem(id, button);
+  }
+
+  function handleFixedTemplateListClick(event) {
+    const button = event.target.closest("[data-action]");
+    if (!button) return;
+
+    const id = button.dataset.id;
+    if (!id) return;
+
+    if (button.dataset.action === "edit") editFixedForecastTemplate(id);
+    if (button.dataset.action === "delete") deleteFixedForecastTemplate(id, button);
+  }
+
+  function saveForecastItem() {
+    const title = toText(getValue("forecastTitleInput"));
+    const amount = normalizeAmount(getValue("forecastAmountInput"));
+    const categoryId = toText(getValue("forecastCategoryInput")) || FALLBACK_CATEGORY_ID;
+    const plannedDate = normalizeForecastPlannedDate(getValue("forecastDateInput"), state.selectedForecastMonth);
+    const note = toText(getValue("forecastNoteInput"));
+    const recurringDay = normalizeRecurringDay(getValue("forecastRecurringDayInput"));
+    const editingId = toText(getValue("forecastEditingId"));
+    const kind = normalizeForecastKind(getValue("forecastKindInput"));
+
+    if (!title) {
+      alert("请输入事项名称");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      alert("请输入大于 0 的预计金额");
+      return;
+    }
+
+    if (!state.store.categories.some(category => category.id === categoryId)) {
+      alert("请选择有效的分类");
+      return;
+    }
+
+    const nextStore = cloneStore(state.store);
+    const now = new Date().toISOString();
+    const existing = editingId ? findForecastItem(state.store, editingId)?.item : null;
+    const nextItem = normalizeForecastItem({
+      ...existing,
+      id: existing?.id || createId("forecast"),
+      title,
+      amount,
+      categoryId,
+      month: state.selectedForecastMonth,
+      kind,
+      plannedDate,
+      recurringDay,
+      note,
+      status: existing?.status || "planned",
+      createdAt: existing?.createdAt || now,
+      updatedAt: now
+    }, new Set(nextStore.categories.map(category => category.id)));
+
+    if (!nextItem) {
+      alert("预估项数据不完整");
+      return;
+    }
+
+    if (editingId) {
+      removeForecastItemFromStore(nextStore, editingId);
+    }
+
+    nextStore.forecastMonths[nextItem.month] = (nextStore.forecastMonths[nextItem.month] || [])
+      .concat(nextItem)
+      .sort(compareForecastItems);
+
+    state.store = saveExpenseStore(nextStore);
+    renderAll({ resetForm: false });
+    resetForecastForm();
+    setStatus("forecastFormStatus", editingId ? "本月预估项已更新" : "临时事项已保存", true);
+  }
+
+  function saveFixedForecastTemplate() {
+    const title = toText(getValue("fixedForecastTitleInput"));
+    const amount = normalizeAmount(getValue("fixedForecastAmountInput"));
+    const categoryId = toText(getValue("fixedForecastCategoryInput")) || FALLBACK_CATEGORY_ID;
+    const recurringDay = normalizeRecurringDay(getValue("fixedForecastRecurringDayInput"));
+    const note = toText(getValue("fixedForecastNoteInput"));
+    const editingId = toText(getValue("fixedForecastEditingId"));
+    const now = new Date().toISOString();
+
+    if (!title) {
+      alert("请输入固定项目名称");
+      return;
+    }
+
+    if (!amount || amount <= 0) {
+      alert("请输入大于 0 的默认金额");
+      return;
+    }
+
+    if (!state.store.categories.some(category => category.id === categoryId)) {
+      alert("请选择有效的分类");
+      return;
+    }
+
+    const nextStore = cloneStore(state.store);
+    const existing = editingId ? nextStore.fixedForecastTemplates.find(item => item.id === editingId) : null;
+    const nextTemplate = normalizeFixedForecastTemplate({
+      ...existing,
+      id: existing?.id || createId("fixed-forecast"),
+      title,
+      amount,
+      categoryId,
+      recurringDay,
+      note,
+      createdAt: existing?.createdAt || now,
+      updatedAt: now
+    }, new Set(nextStore.categories.map(category => category.id)));
+
+    if (!nextTemplate) {
+      alert("固定项目数据不完整");
+      return;
+    }
+
+    if (editingId) {
+      nextStore.fixedForecastTemplates = nextStore.fixedForecastTemplates.map(item => item.id === editingId ? nextTemplate : item);
+    } else {
+      nextStore.fixedForecastTemplates.push(nextTemplate);
+    }
+
+    nextStore.fixedForecastTemplates.sort(compareFixedForecastTemplates);
+    state.store = saveExpenseStore(nextStore);
+    renderAll({ resetForm: false });
+    resetFixedForecastForm();
+    setStatus("fixedForecastFormStatus", editingId ? "固定项目模板已更新" : "固定项目模板已保存", true);
+  }
+
+  function editForecastItem(id) {
+    const match = findForecastItem(state.store, id);
+    if (!match?.item) return;
+
+    const item = match.item;
+    state.selectedForecastMonth = item.month;
+    syncForecastMonthInput();
+
+    setValue("forecastEditingId", item.id);
+    setValue("forecastKindInput", item.kind);
+    setValue("forecastTitleInput", item.title);
+    setValue("forecastAmountInput", item.amount.toFixed(2));
+    setValue("forecastCategoryInput", item.categoryId);
+    setValue("forecastDateInput", item.plannedDate);
+    setValue("forecastRecurringDayInput", item.recurringDay || "");
+    setValue("forecastNoteInput", item.note);
+    toggleForecastRecurringDayField(item.kind === "fixed");
+    setText("forecastSubmitLabel", "保存预估项");
+    setStatus("forecastFormStatus", `正在编辑：${item.title}`, true);
+
+    const cancelButton = document.getElementById("cancelForecastEdit");
+    if (cancelButton) cancelButton.hidden = false;
+
+    document.getElementById("forecastTitleInput")?.focus();
+  }
+
+  function editFixedForecastTemplate(id) {
+    const template = state.store.fixedForecastTemplates.find(item => item.id === id);
+    if (!template) return;
+
+    setValue("fixedForecastEditingId", template.id);
+    setValue("fixedForecastTitleInput", template.title);
+    setValue("fixedForecastAmountInput", template.amount.toFixed(2));
+    setValue("fixedForecastCategoryInput", template.categoryId);
+    setValue("fixedForecastRecurringDayInput", template.recurringDay || "");
+    setValue("fixedForecastNoteInput", template.note);
+    setText("fixedForecastSubmitLabel", "保存固定项目");
+    setStatus("fixedForecastFormStatus", `正在编辑：${template.title}`, true);
+
+    const cancelButton = document.getElementById("cancelFixedForecastEdit");
+    if (cancelButton) cancelButton.hidden = false;
+
+    document.getElementById("fixedForecastTitleInput")?.focus();
+  }
+
+  function updateForecastItemStatus(id, nextStatus) {
+    const match = findForecastItem(state.store, id);
+    if (!match?.item) return;
+
+    const nextStore = cloneStore(state.store);
+    nextStore.forecastMonths[match.month] = nextStore.forecastMonths[match.month].map(item => item.id === id
+      ? {
+          ...item,
+          status: normalizeForecastStatus(nextStatus),
+          updatedAt: new Date().toISOString()
+        }
+      : item
+    );
+
+    state.store = saveExpenseStore(nextStore);
+    renderForecastSection();
+    setStatus("forecastFormStatus", nextStatus === "skipped" ? "该项已标记为跳过" : "该项已恢复到计划中", true);
+  }
+
+  function applyForecastItemToExpenseForm(id) {
+    const match = findForecastItem(state.store, id);
+    if (!match?.item) return;
+
+    const item = match.item;
+    updateForecastItemStatus(id, "done");
+    const fallbackDate = item.recurringDay
+      ? `${item.month}-${String(item.recurringDay).padStart(2, "0")}`
+      : `${item.month}-01`;
+
+    setValue("expenseEditingId", "");
+    setValue("expenseAmountInput", item.amount.toFixed(2));
+    setValue("expenseDateInput", item.plannedDate || fallbackDate);
+    setValue("expenseCategoryInput", item.categoryId);
+    setValue("expenseNoteInput", item.note || item.title);
+    setText("expenseSubmitLabel", "保存消费");
+    setStatus("expenseFormStatus", `已从预估项预填：${item.title}，确认后再保存到实际消费记录。`, true);
+
+    const cancelButton = document.getElementById("cancelExpenseEdit");
+    if (cancelButton) cancelButton.hidden = true;
+
+    document.getElementById("expenseAmountInput")?.focus();
+  }
+
+  function loadFixedForecastTemplatesForCurrentMonth() {
+    const nextStore = cloneStore(state.store);
+    const templates = nextStore.fixedForecastTemplates.slice();
+
+    if (!templates.length) {
+      setStatus("fixedForecastFormStatus", "还没有固定项目模板可载入", false);
+      return;
+    }
+
+    const existing = nextStore.forecastMonths[state.selectedForecastMonth] || [];
+    const now = new Date().toISOString();
+    let inserted = 0;
+
+    templates.forEach(template => {
+      const duplicate = existing.some(item =>
+        item.kind === "fixed" &&
+        item.title === template.title &&
+        item.amount === template.amount &&
+        item.categoryId === template.categoryId
+      );
+
+      if (duplicate) return;
+
+      existing.push({
+        id: createId("forecast"),
+        title: template.title,
+        amount: template.amount,
+        categoryId: template.categoryId,
+        month: state.selectedForecastMonth,
+        kind: "fixed",
+        plannedDate: "",
+        recurringDay: template.recurringDay,
+        note: template.note,
+        status: "planned",
+        createdAt: now,
+        updatedAt: now
+      });
+      inserted += 1;
+    });
+
+    nextStore.forecastMonths[state.selectedForecastMonth] = existing.sort(compareForecastItems);
+    state.store = saveExpenseStore(nextStore);
+    renderForecastSection();
+    setStatus("fixedForecastFormStatus", inserted ? `已载入 ${inserted} 个固定项目到 ${formatForecastMonthLabel(state.selectedForecastMonth)}` : "这个月已包含所有固定项目，无需重复载入", true);
+  }
+
+  function deleteForecastItem(id, trigger) {
+    const match = findForecastItem(state.store, id);
+    if (!match?.item) return;
+
+    const snapshot = { ...match.item };
+    const month = match.month;
+    const deleteElement = findForecastDeleteElement(id, trigger);
+
+    const removeItem = () => {
+      const nextStore = cloneStore(state.store);
+      removeForecastItemFromStore(nextStore, id);
+      state.store = saveExpenseStore(nextStore);
+      renderForecastSection();
+    };
+
+    const restoreItem = () => {
+      const nextStore = cloneStore(state.store);
+      nextStore.forecastMonths[month] = (nextStore.forecastMonths[month] || [])
+        .concat(snapshot)
+        .sort(compareForecastItems);
+      state.store = saveExpenseStore(nextStore);
+      renderForecastSection();
+    };
+
+    if (window.PageMotion?.removeWithUndo) {
+      PageMotion.removeWithUndo({
+        key: `forecast:${id}`,
+        element: deleteElement,
+        label: snapshot.title,
+        remove: removeItem,
+        restore: restoreItem,
+        timeoutMs: 2200
+      });
+      return;
+    }
+
+    removeItem();
+  }
+
+  function deleteFixedForecastTemplate(id, trigger) {
+    const templateIndex = state.store.fixedForecastTemplates.findIndex(item => item.id === id);
+    if (templateIndex < 0) return;
+
+    const snapshot = { ...state.store.fixedForecastTemplates[templateIndex] };
+    const deleteElement = findFixedForecastDeleteElement(id, trigger);
+
+    const removeTemplate = () => {
+      const nextStore = cloneStore(state.store);
+      nextStore.fixedForecastTemplates = nextStore.fixedForecastTemplates.filter(item => item.id !== id);
+      state.store = saveExpenseStore(nextStore);
+      renderForecastSection();
+    };
+
+    const restoreTemplate = () => {
+      const nextStore = cloneStore(state.store);
+      const nextTemplates = nextStore.fixedForecastTemplates.slice();
+      nextTemplates.splice(Math.min(templateIndex, nextTemplates.length), 0, snapshot);
+      nextStore.fixedForecastTemplates = nextTemplates.sort(compareFixedForecastTemplates);
+      state.store = saveExpenseStore(nextStore);
+      renderForecastSection();
+    };
+
+    if (window.PageMotion?.removeWithUndo) {
+      PageMotion.removeWithUndo({
+        key: `fixed-forecast:${id}`,
+        element: deleteElement,
+        label: snapshot.title,
+        remove: removeTemplate,
+        restore: restoreTemplate,
+        timeoutMs: 2200
+      });
+      return;
+    }
+
+    removeTemplate();
+  }
+
   function saveCustomCategory() {
     const name = toText(getValue("categoryNameInput"));
     const icon = toText(getValue("categoryIconInput")) || "🧾";
@@ -463,6 +1023,42 @@ const ExpensesApp = (() => {
     if (cancelButton) cancelButton.hidden = true;
   }
 
+  function resetForecastForm() {
+    setValue("forecastEditingId", "");
+    setValue("forecastKindInput", "one_off");
+    setValue("forecastTitleInput", "");
+    setValue("forecastAmountInput", "");
+    setValue("forecastDateInput", `${state.selectedForecastMonth}-01`);
+    setValue("forecastRecurringDayInput", "");
+    setValue("forecastNoteInput", "");
+    renderSelectOptions("forecastCategoryInput");
+    setText("forecastSubmitLabel", "保存临时事项");
+    setStatus("forecastFormStatus", "");
+    toggleForecastRecurringDayField(false);
+
+    const cancelButton = document.getElementById("cancelForecastEdit");
+    if (cancelButton) cancelButton.hidden = true;
+  }
+
+  function resetFixedForecastForm() {
+    setValue("fixedForecastEditingId", "");
+    setValue("fixedForecastTitleInput", "");
+    setValue("fixedForecastAmountInput", "");
+    setValue("fixedForecastRecurringDayInput", "");
+    setValue("fixedForecastNoteInput", "");
+    renderSelectOptions("fixedForecastCategoryInput");
+    setText("fixedForecastSubmitLabel", "保存固定项目");
+    setStatus("fixedForecastFormStatus", "");
+
+    const cancelButton = document.getElementById("cancelFixedForecastEdit");
+    if (cancelButton) cancelButton.hidden = true;
+  }
+
+  function toggleForecastRecurringDayField(visible) {
+    const field = document.getElementById("forecastRecurringDayField");
+    if (field) field.hidden = !visible;
+  }
+
   function resetCategoryForm() {
     setValue("categoryNameInput", "");
     setValue("categoryIconInput", "");
@@ -471,19 +1067,9 @@ const ExpensesApp = (() => {
   }
 
   function renderCategoryOptions(preferredCategoryId = "") {
-    const select = document.getElementById("expenseCategoryInput");
-    if (!select) return;
-
-    const currentValue = preferredCategoryId || toText(select.value);
-    select.innerHTML = state.store.categories.map(category => `
-      <option value="${escapeAttribute(category.id)}">${escapeHtml(category.icon)} ${escapeHtml(category.name)}</option>
-    `).join("");
-
-    const nextValue = state.store.categories.some(category => category.id === currentValue)
-      ? currentValue
-      : state.store.categories[0]?.id || FALLBACK_CATEGORY_ID;
-
-    select.value = nextValue;
+    renderSelectOptions("expenseCategoryInput", preferredCategoryId);
+    renderSelectOptions("forecastCategoryInput", preferredCategoryId);
+    renderSelectOptions("fixedForecastCategoryInput", preferredCategoryId);
   }
 
   function getExpenseStore() {
@@ -508,6 +1094,9 @@ const ExpensesApp = (() => {
   function createDefaultStore() {
     return {
       records: [],
+      forecastMonths: {},
+      fixedForecastTemplates: [],
+      budgetMonths: {},
       categories: BUILTIN_CATEGORIES.map(category => ({
         ...category,
         createdAt: BUILTIN_CREATED_AT
@@ -526,8 +1115,11 @@ const ExpensesApp = (() => {
           .map(record => normalizeRecord(record, categoryIds))
           .filter(Boolean)
       : [];
+    const forecastMonths = normalizeForecastMonths(source.forecastMonths, categoryIds);
+    const fixedForecastTemplates = normalizeFixedForecastTemplates(source.fixedForecastTemplates, categoryIds);
+    const budgetMonths = normalizeBudgetMonths(source.budgetMonths, categoryIds);
 
-    return { records, categories };
+    return { records, categories, forecastMonths, fixedForecastTemplates, budgetMonths };
   }
 
   function normalizeCategories(rawCategories) {
@@ -569,6 +1161,99 @@ const ExpensesApp = (() => {
     };
   }
 
+  function normalizeFixedForecastTemplates(rawTemplates, categoryIds) {
+    return Array.isArray(rawTemplates)
+      ? rawTemplates
+          .filter(template => template && typeof template === "object")
+          .map(template => normalizeFixedForecastTemplate(template, categoryIds))
+          .filter(Boolean)
+      : [];
+  }
+
+  function normalizeForecastMonths(rawMonths, categoryIds) {
+    const source = rawMonths && typeof rawMonths === "object" ? rawMonths : {};
+    const normalized = {};
+
+    Object.entries(source).forEach(([monthKey, items]) => {
+      const month = normalizeMonthValue(monthKey);
+      if (!month || !Array.isArray(items)) return;
+
+      const nextItems = items
+        .filter(item => item && typeof item === "object")
+        .map(item => normalizeForecastItem({ ...item, month }, categoryIds))
+        .filter(Boolean)
+        .sort(compareForecastItems);
+
+      if (nextItems.length) {
+        normalized[month] = nextItems;
+      }
+    });
+
+    return normalized;
+  }
+
+  function normalizeBudgetMonths(rawMonths, categoryIds) {
+    const source = rawMonths && typeof rawMonths === "object" ? rawMonths : {};
+    const normalized = {};
+
+    Object.entries(source).forEach(([monthKey, value]) => {
+      const month = normalizeMonthValue(monthKey);
+      if (!month || !value || typeof value !== "object") return;
+
+      const categoryBudgets = value.categoryBudgets && typeof value.categoryBudgets === "object"
+        ? Object.fromEntries(Object.entries(value.categoryBudgets)
+            .filter(([categoryId, amount]) => categoryIds.has(categoryId) && normalizeAmount(amount) > 0)
+            .map(([categoryId, amount]) => [categoryId, normalizeAmount(amount)]))
+        : {};
+
+      normalized[month] = {
+        totalBudget: normalizeAmount(value.totalBudget),
+        categoryBudgets
+      };
+    });
+
+    return normalized;
+  }
+
+  function normalizeForecastItem(item, categoryIds) {
+    const amount = normalizeAmount(item.amount);
+    const month = normalizeMonthValue(item.month);
+    if (!amount || !month) return null;
+
+    const createdAt = normalizeDateTime(item.createdAt) || new Date().toISOString();
+    return {
+      id: toText(item.id) || createId("forecast"),
+      title: toText(item.title) || "未命名预估项",
+      amount,
+      categoryId: categoryIds.has(item.categoryId) ? item.categoryId : FALLBACK_CATEGORY_ID,
+      month,
+      kind: normalizeForecastKind(item.kind),
+      plannedDate: normalizeForecastPlannedDate(item.plannedDate, month),
+      recurringDay: normalizeRecurringDay(item.recurringDay),
+      note: toText(item.note),
+      status: normalizeForecastStatus(item.status),
+      createdAt,
+      updatedAt: normalizeDateTime(item.updatedAt) || createdAt
+    };
+  }
+
+  function normalizeFixedForecastTemplate(template, categoryIds) {
+    const amount = normalizeAmount(template.amount);
+    if (!amount) return null;
+
+    const createdAt = normalizeDateTime(template.createdAt) || new Date().toISOString();
+    return {
+      id: toText(template.id) || createId("fixed-forecast"),
+      title: toText(template.title) || "未命名固定项",
+      amount,
+      categoryId: categoryIds.has(template.categoryId) ? template.categoryId : FALLBACK_CATEGORY_ID,
+      recurringDay: normalizeRecurringDay(template.recurringDay),
+      note: toText(template.note),
+      createdAt,
+      updatedAt: normalizeDateTime(template.updatedAt) || createdAt
+    };
+  }
+
   function getRangeStats(range, records) {
     const info = getRangeInfo(range);
     const rangeRecords = records.filter(record => {
@@ -583,6 +1268,34 @@ const ExpensesApp = (() => {
       records: rangeRecords,
       total,
       average: elapsedDays ? roundAmount(total / elapsedDays) : 0
+    };
+  }
+
+  function buildForecastMonthView(store, month) {
+    const normalized = normalizeStore(store);
+    const targetMonth = normalizeMonthValue(month) || getCurrentMonthKey();
+    const items = (normalized.forecastMonths[targetMonth] || []).map(item => ({
+      ...item,
+      category: normalized.categories.find(category => category.id === item.categoryId) || getFallbackCategory(),
+      plannedDateLabel: item.plannedDate ? formatDateLabel(item.plannedDate) : "本月内",
+      recurringDayLabel: item.recurringDay ? `通常每月 ${item.recurringDay} 号` : "每月固定项目"
+    }));
+    const activeItems = items.filter(item => item.status !== "skipped");
+
+    return {
+      month: targetMonth,
+      items,
+      stats: {
+        total: roundAmount(activeItems.reduce((sum, item) => sum + item.amount, 0)),
+        fixedTotal: roundAmount(activeItems.filter(item => item.kind === "fixed").reduce((sum, item) => sum + item.amount, 0)),
+        oneOffTotal: roundAmount(activeItems.filter(item => item.kind === "one_off").reduce((sum, item) => sum + item.amount, 0)),
+        actualTotal: roundAmount(normalized.records.filter(record => toMonthKey(record.date) === targetMonth).reduce((sum, record) => sum + record.amount, 0))
+      },
+      groups: {
+        fixed: items.filter(item => item.kind === "fixed"),
+        oneOff: items.filter(item => item.kind === "one_off")
+      },
+      fixedTemplates: normalized.fixedForecastTemplates.slice().sort(compareFixedForecastTemplates)
     };
   }
 
@@ -737,7 +1450,19 @@ const ExpensesApp = (() => {
   function cloneStore(store) {
     return {
       records: store.records.map(record => ({ ...record })),
-      categories: store.categories.map(category => ({ ...category }))
+      categories: store.categories.map(category => ({ ...category })),
+      forecastMonths: Object.fromEntries(Object.entries(store.forecastMonths || {}).map(([month, items]) => [
+        month,
+        items.map(item => ({ ...item }))
+      ])),
+      fixedForecastTemplates: (store.fixedForecastTemplates || []).map(item => ({ ...item })),
+      budgetMonths: Object.fromEntries(Object.entries(store.budgetMonths || {}).map(([month, value]) => [
+        month,
+        {
+          totalBudget: value.totalBudget || 0,
+          categoryBudgets: { ...(value.categoryBudgets || {}) }
+        }
+      ]))
     };
   }
 
@@ -772,6 +1497,34 @@ const ExpensesApp = (() => {
     return roundAmount(number);
   }
 
+  function normalizeMonthValue(value) {
+    const text = toText(value);
+    if (!/^\d{4}-\d{2}$/.test(text)) return "";
+    const [year, month] = text.split("-").map(part => Number.parseInt(part, 10));
+    if (!year || !month || month < 1 || month > 12) return "";
+    return `${year}-${String(month).padStart(2, "0")}`;
+  }
+
+  function normalizeRecurringDay(value) {
+    const day = Number.parseInt(value, 10);
+    if (!Number.isInteger(day) || day < 1 || day > 31) return null;
+    return day;
+  }
+
+  function normalizeForecastKind(value) {
+    return value === "fixed" ? "fixed" : "one_off";
+  }
+
+  function normalizeForecastStatus(value) {
+    return ["planned", "done", "skipped"].includes(value) ? value : "planned";
+  }
+
+  function normalizeForecastPlannedDate(value, month) {
+    const normalized = normalizeDateValue(value);
+    if (!normalized) return "";
+    return toMonthKey(normalized) === month ? normalized : "";
+  }
+
   function normalizeDateValue(value) {
     const text = toText(value);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
@@ -789,6 +1542,45 @@ const ExpensesApp = (() => {
   function normalizeColor(value) {
     const text = toText(value);
     return /^#[0-9a-fA-F]{6}$/.test(text) ? text : "#60a5fa";
+  }
+
+  function toMonthKey(value) {
+    const normalized = normalizeDateValue(value);
+    return normalized ? normalized.slice(0, 7) : "";
+  }
+
+  function getCurrentMonthKey() {
+    return getTodayValue().slice(0, 7);
+  }
+
+  function shiftMonth(monthValue, delta) {
+    const month = normalizeMonthValue(monthValue) || getCurrentMonthKey();
+    const [year, monthIndex] = month.split("-").map(part => Number.parseInt(part, 10));
+    return `${new Date(year, monthIndex - 1 + delta, 1).getFullYear()}-${String(new Date(year, monthIndex - 1 + delta, 1).getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function compareForecastItems(a, b) {
+    const aDate = a.plannedDate || `${a.month}-99`;
+    const bDate = b.plannedDate || `${b.month}-99`;
+    if (aDate !== bDate) return aDate.localeCompare(bDate);
+    if (a.kind !== b.kind) return a.kind === "fixed" ? -1 : 1;
+    return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+  }
+
+  function compareFixedForecastTemplates(a, b) {
+    return String(a.createdAt || "").localeCompare(String(b.createdAt || ""));
+  }
+
+  function findForecastItem(store, forecastId) {
+    const targetId = toText(forecastId);
+    if (!targetId) return null;
+
+    for (const [month, items] of Object.entries(store.forecastMonths || {})) {
+      const item = items.find(entry => entry.id === targetId);
+      if (item) return { month, item };
+    }
+
+    return null;
   }
 
   function parseDateValue(value) {
@@ -812,6 +1604,19 @@ const ExpensesApp = (() => {
 
   function formatPercent(value) {
     return `${roundAmount(value).toFixed(1)}%`;
+  }
+
+  function formatForecastMonthLabel(monthValue) {
+    const month = normalizeMonthValue(monthValue);
+    if (!month) return "当前月份";
+    const [year, monthNumber] = month.split("-");
+    return `${year} 年 ${Number.parseInt(monthNumber, 10)} 月`;
+  }
+
+  function getForecastStatusLabel(status) {
+    if (status === "done") return "已记为支出";
+    if (status === "skipped") return "已跳过";
+    return "计划中";
   }
 
   function getTodayValue() {

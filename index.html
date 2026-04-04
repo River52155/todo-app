@@ -118,15 +118,18 @@
       border-radius: 8px;
       font-size: 16px;
       margin-bottom: 15px;
-      background: rgba(20, 25, 40, 0.5);
+      background: rgba(12, 18, 30, 0.9);
+      background-color: rgba(12, 18, 30, 0.9);
       color: #f7fafc;
+      color-scheme: dark;
       transition: all 0.25s;
     }
     .task-input::placeholder { color: #a0aec0; }
     .task-input:focus {
       outline: none;
       border-color: rgba(99, 179, 237, 0.6);
-      box-shadow: 0 0 15px rgba(99, 179, 237, 0.2);
+      box-shadow: 0 0 15px rgba(99, 179, 237, 0.15);
+      background-color: rgba(14, 22, 36, 0.96);
     }
 
     .input-grid {
@@ -156,17 +159,40 @@
       border-radius: 8px;
       font-size: 14px;
       transition: all 0.25s;
-      background: rgba(20, 25, 40, 0.5);
+      background: rgba(12, 18, 30, 0.9);
+      background-color: rgba(12, 18, 30, 0.9);
       color: #f7fafc;
+      color-scheme: dark;
     }
 
-    .input-group input::placeholder { color: #a0aec0; }
+    .input-group input::placeholder { color: #8ea2b6; }
+
+    .input-group select {
+      appearance: none;
+      background-image:
+        linear-gradient(45deg, transparent 50%, rgba(226, 232, 240, 0.92) 50%),
+        linear-gradient(135deg, rgba(226, 232, 240, 0.92) 50%, transparent 50%);
+      background-position:
+        calc(100% - 18px) calc(50% - 2px),
+        calc(100% - 12px) calc(50% - 2px);
+      background-size: 6px 6px, 6px 6px;
+      background-repeat: no-repeat;
+      padding-right: 38px;
+    }
+
+    .input-group select option,
+    .input-group select optgroup {
+      background: #101826;
+      background-color: #101826;
+      color: #f7fafc;
+    }
 
     .input-group input:focus,
     .input-group select:focus {
       outline: none;
       border-color: rgba(99, 179, 237, 0.6);
-      box-shadow: 0 0 15px rgba(99, 179, 237, 0.2);
+      box-shadow: 0 0 15px rgba(99, 179, 237, 0.15);
+      background-color: rgba(14, 22, 36, 0.96);
     }
 
     .btn-add {
@@ -696,8 +722,9 @@
             <nav class="page-nav" data-motion-stage style="--motion-order: 1;">
       <a class="nav-link active" href="index.html" data-hover-pop>每日计划</a>
       <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
-      <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
-      <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
+        <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
+        <a class="nav-link" href="budget.html" data-hover-pop>月度花销</a>
+        <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
     </nav>
 
     <div class="stats" data-motion-stage style="--motion-order: 2;">

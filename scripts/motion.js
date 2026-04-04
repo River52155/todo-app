@@ -1,4 +1,4 @@
-﻿const PageMotion = (() => {
+const PageMotion = (() => {
   const reduceMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
   const hoverCapabilityQuery = window.matchMedia("(hover: hover) and (pointer: fine)");
   const activeHoverTargets = new WeakSet();
@@ -347,7 +347,7 @@
 
   function findRemovalItemElement(element) {
     if (!(element instanceof Element)) return null;
-    return element.closest("[data-task-id], [data-record-id], [data-milestone-id]") || element;
+    return element.closest("[data-task-id], [data-record-id], [data-milestone-id], [data-forecast-id], [data-fixed-forecast-id]") || element;
   }
 
   function findRemovalVisualSource(item) {
@@ -390,6 +390,14 @@
       return item.closest("#recordsList, .records-list");
     }
 
+    if (item.classList.contains("forecast-item")) {
+      return item.closest("#forecastFixedList, #forecastOneOffList");
+    }
+
+    if (item.classList.contains("forecast-template-item")) {
+      return item.closest("#fixedForecastTemplatesList");
+    }
+
     if (item.classList.contains("milestone-card")) {
       return item.closest("#milestoneList, .milestone-list");
     }
@@ -398,7 +406,7 @@
       return item.closest(".recent-lane-list");
     }
 
-    return item.closest("#weeklyList, #taskList, #monthlyList, #recordsList, #milestoneList, .records-list, .milestone-list, .recent-lane-list");
+    return item.closest("#weeklyList, #taskList, #monthlyList, #recordsList, #milestoneList, #forecastFixedList, #forecastOneOffList, #fixedForecastTemplatesList, .records-list, .milestone-list, .recent-lane-list");
   }
 
   function classifyUndoVariant(item) {
@@ -406,6 +414,8 @@
     if (item.classList.contains("task-item")) return "task";
     if (item.classList.contains("history-item")) return "history";
     if (item.classList.contains("record-item")) return "record";
+    if (item.classList.contains("forecast-item")) return "record";
+    if (item.classList.contains("forecast-template-item")) return "default";
     if (item.classList.contains("milestone-card")) return "milestone";
     if (item.classList.contains("recent-card")) return "default";
     return "default";
@@ -416,6 +426,8 @@
     if (item.classList.contains("history-item")) return "history";
     if (item.classList.contains("task-item")) return "tasks";
     if (item.classList.contains("record-item")) return "records";
+    if (item.classList.contains("forecast-item")) return "records";
+    if (item.classList.contains("forecast-template-item")) return "records";
     if (item.classList.contains("milestone-card")) return "milestones";
     if (item.classList.contains("recent-card")) return "recent";
     return "default";

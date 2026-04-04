@@ -1,0 +1,214 @@
+<view class="page-shell">
+  <view class="glass-card page-nav">
+    <view
+      wx:for="{{navItems}}"
+      wx:key="key"
+      class="nav-pill {{item.active ? 'nav-pill--active' : ''}}"
+      data-path="{{item.path}}"
+      bindtap="handleNavTap"
+    >
+      {{item.label}}
+    </view>
+  </view>
+
+  <view class="glass-card hero-card">
+    <text class="eyebrow">Expense Tracker</text>
+    <text class="hero-title">先把消费记下来，再按今天、本周、本月、本年回看结构。</text>
+    <text class="hero-desc">小程序版保留了区间切换、分类汇总、趋势概览和账单编辑。你可以继续沿用网页端的本地存储结构。</text>
+  </view>
+
+  <view class="stat-grid">
+    <view class="stat-card">
+      <text class="stat-number">{{view.stats.totalText}}</text>
+      <text class="stat-label">当前范围总消费</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{view.stats.count}}</text>
+      <text class="stat-label">记录数量</text>
+    </view>
+    <view class="stat-card">
+      <text class="stat-number">{{view.stats.averageText}}</text>
+      <text class="stat-label">日均消费</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">时间范围</text>
+        <text class="section-subtitle">切换查看不同时间粒度下的消费结构。</text>
+      </view>
+    </view>
+
+    <view class="tab-row">
+      <view
+        wx:for="{{rangeOptions}}"
+        wx:key="value"
+        class="tab-chip {{selectedRange === item.value ? 'tab-chip--active' : ''}}"
+        data-range="{{item.value}}"
+        bindtap="switchRange"
+      >
+        {{item.label}}
+      </view>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">{{editingId ? '编辑消费' : '新增消费'}}</text>
+        <text class="section-subtitle">先记账，分类和统计会自动更新。</text>
+      </view>
+    </view>
+
+    <view class="form-grid">
+      <view class="form-row">
+        <view>
+          <text class="field-label">金额</text>
+          <input class="text-input" type="digit" placeholder="例如：25.8" value="{{expenseForm.amount}}" data-field="amount" bindinput="handleExpenseInput" />
+        </view>
+        <view>
+          <text class="field-label">日期</text>
+          <picker mode="date" value="{{expenseForm.date}}" bindchange="handleExpenseDateChange">
+            <view class="picker-input">{{expenseForm.date}}</view>
+          </picker>
+        </view>
+      </view>
+
+      <view>
+        <text class="field-label">分类</text>
+        <picker range="{{view.categories}}" range-key="name" bindchange="handleCategorySelect">
+          <view class="picker-input">{{currentCategoryLabel}}</view>
+        </picker>
+      </view>
+
+      <view>
+        <text class="field-label">备注</text>
+        <textarea class="textarea-input" placeholder="例如：午饭、交通、买书、课程" value="{{expenseForm.note}}" data-field="note" bindinput="handleExpenseInput"></textarea>
+      </view>
+
+      <view class="form-actions">
+        <button class="primary-btn" bindtap="saveExpense">{{editingId ? '保存修改' : '保存消费'}}</button>
+        <button wx:if="{{editingId}}" class="ghost-btn" bindtap="cancelEdit">取消编辑</button>
+      </view>
+
+      <text wx:if="{{statusText}}" class="status-text">{{statusText}}</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">快速补一个分类</text>
+        <text class="section-subtitle">如果现有分类不够用，可以临时加一个。</text>
+      </view>
+    </view>
+
+    <view class="form-grid">
+      <view class="form-row">
+        <view>
+          <text class="field-label">分类名</text>
+          <input class="text-input" placeholder="例如：摄影器材" value="{{categoryForm.name}}" data-field="name" bindinput="handleCategoryInput" />
+        </view>
+        <view>
+          <text class="field-label">图标</text>
+          <input class="text-input" maxlength="4" placeholder="📷" value="{{categoryForm.icon}}" data-field="icon" bindinput="handleCategoryInput" />
+        </view>
+      </view>
+
+      <view>
+        <text class="field-label">颜色</text>
+        <input class="text-input" placeholder="#60a5fa" value="{{categoryForm.color}}" data-field="color" bindinput="handleCategoryInput" />
+      </view>
+
+      <view class="form-actions">
+        <button class="secondary-btn" bindtap="addCategory">添加分类</button>
+      </view>
+
+      <text wx:if="{{categoryStatusText}}" class="status-text">{{categoryStatusText}}</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">分类构成</text>
+        <text class="section-subtitle">按当前时间范围统计每个分类的金额占比。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{view.breakdown.length}}" class="card-list">
+      <view wx:for="{{view.breakdown}}" wx:key="categoryId" class="record-card">
+        <view class="row-between">
+          <text class="card-title">{{item.category.icon}} {{item.category.name}}</text>
+          <text class="card-title">{{item.totalText}}</text>
+        </view>
+        <view class="meta-row">
+          <text class="meta-chip">占比 {{item.percent}}%</text>
+          <text class="meta-chip">{{item.count}} 笔</text>
+        </view>
+        <view class="progress-bar">
+          <view class="progress-fill" style="{{'width:' + item.percent + '%;'}}"></view>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <text class="empty-title">当前范围还没有分类数据</text>
+      <text>新增几笔消费后，这里会自动出现分类构成。</text>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">消费趋势</text>
+        <text class="section-subtitle">这里只保留一个轻量趋势列表，先确保你在小程序里能快速看变化。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{view.trend.length}}" class="trend-list">
+      <view wx:for="{{view.trend}}" wx:key="label" class="trend-row">
+        <text class="trend-label">{{item.label}}</text>
+        <view class="trend-bar-shell">
+          <view class="trend-bar-fill" style="{{'width:' + item.widthPercent + '%;'}}"></view>
+        </view>
+        <text class="trend-value">{{item.totalText || '—'}}</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="glass-card section-card">
+    <view class="section-head">
+      <view>
+        <text class="section-title">消费记录</text>
+        <text class="section-subtitle">按日期倒序排列，方便直接编辑和删除。</text>
+      </view>
+    </view>
+
+    <view wx:if="{{view.records.length}}" class="card-list">
+      <view wx:for="{{view.records}}" wx:key="id" class="record-card">
+        <view class="row-between">
+          <view>
+            <text class="card-title">{{item.category.icon}} {{item.amountText}}</text>
+            <text class="card-copy">{{item.note || '未填写备注'}}</text>
+          </view>
+          <view class="inline-actions">
+            <button class="small-btn secondary-btn" data-id="{{item.id}}" bindtap="editRecord">编辑</button>
+            <button class="small-btn danger-btn" data-id="{{item.id}}" bindtap="removeRecord">删除</button>
+          </view>
+        </view>
+        <view class="meta-row">
+          <text class="meta-chip">{{item.category.name}}</text>
+          <text class="meta-chip">{{item.dateLabel}}</text>
+          <text class="meta-chip">{{item.updatedLabel}}</text>
+        </view>
+      </view>
+    </view>
+
+    <view wx:else class="empty-state">
+      <text class="empty-title">当前范围还没有消费记录</text>
+      <text>先记下第一笔，再回来回看分类和趋势。</text>
+    </view>
+  </view>
+</view>
