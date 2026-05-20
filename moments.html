@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>回顾时刻</title>
+  <link rel="stylesheet" href="styles/page-nav.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
+  <link rel="stylesheet" href="styles/moments.css" />
+</head>
+<body class="river-star-page">
+  <nav class="site-top-nav" aria-label="主导航">
+    <a class="site-top-nav__brand" href="index.html">River Todo</a>
+    <div class="page-nav site-top-nav__links">
+      <a class="nav-link" href="index.html">每日计划</a>
+      <a class="nav-link" href="recent.html">近期计划</a>
+      <a class="nav-link" href="goals.html#overview">长期目标</a>
+      <a class="nav-link" href="budget.html">月度花销</a>
+      <a class="nav-link" href="expenses.html">消费记录</a>
+      <a class="nav-link active" href="moments.html">回顾时刻</a>
+    </div>
+  </nav>
+
+  <main id="cosmosStage" class="cosmos-stage" data-motion-stage style="--motion-order: 0;" aria-label="River 星图">
+    <canvas id="starfieldCanvas" class="starfield-canvas" aria-hidden="true"></canvas>
+    <div class="cosmos-vignette" aria-hidden="true"></div>
+    <div class="cosmos-grain" aria-hidden="true"></div>
+    <div class="zone-tint-week" aria-hidden="true"></div>
+    <div class="zone-tint-year" aria-hidden="true"></div>
+    <div class="orbit-map" aria-hidden="true"></div>
+
+    <section id="starControlLayer" class="star-control-layer" aria-label="River 星图控制层">
+      <div class="star-brand">
+        <span class="brand-spark" aria-hidden="true"></span>
+        <strong>RIVER 星图</strong>
+        <span id="currentYearLabel">2026</span>
+      </div>
+
+      <div class="top-actions">
+        <a class="glass-button glass-link-button" href="expenses.html">返回消费</a>
+        <button id="createWeeklyMoment" class="glass-button glass-button--primary" type="button">投放星星</button>
+        <button id="createYearlyMoment" class="glass-button" type="button">年度一颗</button>
+        <button id="importStarsButton" class="glass-button" type="button">导入</button>
+        <button id="exportStarsButton" class="glass-button" type="button">导出</button>
+        <button id="filterToggle" class="glass-button" type="button">筛选</button>
+        <button id="settingsToggle" class="glass-button" type="button">设置</button>
+        <input id="importStarsInput" class="sr-only" type="file" accept="application/json,.json" />
+      </div>
+
+      <div class="star-count star-count--week">
+        <span>this week</span>
+        <strong><output id="weeklyDustCount">0</output> 颗星</strong>
+      </div>
+
+      <div class="star-count star-count--year">
+        <span>this year</span>
+        <strong><output id="yearlyDustCount">0</output> 颗星</strong>
+      </div>
+
+      <p id="backupStatus" class="backup-status" aria-live="polite"></p>
+    </section>
+
+    <div id="planetLayer" class="planet-layer" aria-live="polite"></div>
+
+    <p id="cosmosEmptyHint" class="cosmos-empty">
+      这片星图还很安静。投放第一颗星，把今天值得回头看的东西留在这里。
+    </p>
+
+    <aside id="starPreviewCard" class="star-preview-card glass-soft" aria-hidden="true" hidden>
+      <div class="star-preview-card__meta">
+        <span id="previewType"></span>
+        <span id="previewDate"></span>
+      </div>
+      <strong id="previewTitle"></strong>
+      <p id="previewContent"></p>
+      <div id="previewTags" class="preview-tags"></div>
+    </aside>
+  </main>
+
+  <section id="floatingComposer" class="floating-composer add-memory-panel" aria-hidden="true" hidden>
+    <div id="composerPanel" class="composer-panel glass">
+      <form id="composerForm" class="composer-form">
+        <input id="composerType" type="hidden" />
+        <input id="composerEditingId" type="hidden" />
+
+        <div id="composerDragHandle" class="composer-handle">
+          <span class="composer-kicker">DROP A STAR</span>
+          <strong id="composerModeLabel">投放一颗星</strong>
+          <button id="composerClose" class="round-icon-button" type="button" aria-label="关闭输入面板">×</button>
+        </div>
+
+        <label class="sr-only" for="composerTextarea">回顾内容</label>
+        <textarea id="composerTextarea" maxlength="1400" placeholder="只写这件事本身。它为什么让你想把这一刻留在星图里？"></textarea>
+
+        <button id="composerMoreToggle" class="composer-more" type="button" aria-expanded="false" aria-controls="composerExtraFields">
+          更多星光参数
+        </button>
+
+        <div id="composerExtraFields" class="composer-extra" hidden>
+          <label class="field-line">
+            <span>标题</span>
+            <input id="composerTitle" type="text" maxlength="80" placeholder="不填就从正文里取" />
+          </label>
+
+          <div class="composer-grid">
+            <label class="field-line">
+              <span>日期</span>
+              <input id="composerDate" type="date" />
+            </label>
+            <label class="field-line">
+              <span>归属</span>
+              <select id="composerScope">
+                <option value="week">本周星尘</option>
+                <option value="year">年度星河</option>
+              </select>
+            </label>
+          </div>
+
+          <fieldset id="composerMoodTags" class="mood-tags">
+            <legend>情绪标签</legend>
+            <label><input type="checkbox" value="幸福" />幸福</label>
+            <label><input type="checkbox" value="感动" />感动</label>
+            <label><input type="checkbox" value="热泪" />热泪</label>
+            <label><input type="checkbox" value="松弛" />松弛</label>
+            <label><input type="checkbox" value="胜利" />胜利</label>
+            <label><input type="checkbox" value="被理解" />被理解</label>
+            <label><input type="checkbox" value="想念" />想念</label>
+          </fieldset>
+
+          <label class="intensity-field">
+            <span>情绪强度 <output id="composerIntensityValue">5</output> / 10</span>
+            <input id="composerIntensity" type="range" min="1" max="10" value="5" />
+          </label>
+        </div>
+
+        <div class="composer-actions">
+          <span id="composerStatus" class="composer-status" aria-live="polite"></span>
+          <button id="composerCancel" class="quiet-button" type="button">先不写</button>
+          <button id="composerSubmit" class="save-button" type="submit">投进星图</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <section id="memoryPaperOverlay" class="memory-paper-overlay" aria-hidden="true" hidden>
+    <button id="memoryPaperScrim" class="memory-paper-scrim" type="button" aria-label="关闭回顾详情"></button>
+    <article id="memoryPaper" class="memory-paper paper-bg">
+      <button id="paperClose" class="round-icon-button paper-close" type="button" aria-label="关闭回顾">×</button>
+      <span id="paperStamp" class="paper-stamp">本周星尘</span>
+      <p id="paperType" class="memory-paper__type"></p>
+      <h1 id="paperTitle"></h1>
+      <div id="paperMeta" class="memory-meta"></div>
+      <p id="paperContent" class="memory-paper__content"></p>
+      <div class="paper-fold" aria-hidden="true"></div>
+      <div class="paper-actions">
+        <button id="favoriteToYear" class="paper-button" type="button">收藏到年度</button>
+        <button id="popoverEdit" class="paper-button" type="button">编辑</button>
+        <button id="popoverDeleteWeekly" class="paper-button paper-button--danger" type="button" data-action="delete-weekly" hidden>删除</button>
+        <button id="popoverHideYear" class="paper-button" type="button" hidden>暂时隐藏</button>
+        <button id="popoverArchiveYear" class="paper-button" type="button" hidden>归档</button>
+        <button id="popoverYearDeleteRequest" class="paper-button paper-button--danger" type="button" hidden>谨慎删除</button>
+      </div>
+    </article>
+  </section>
+
+  <dialog id="yearDeleteDialog" class="year-delete-dialog glass">
+    <form method="dialog">
+      <p class="dialog-title">这是一颗年度星球。</p>
+      <p>它记录了你今年真实感到幸福的一刻。确定要让它从星图中消失吗？</p>
+      <div class="dialog-actions">
+        <button id="yearCancelDelete" class="quiet-button" value="cancel">取消</button>
+        <button id="yearHideFromDialog" class="quiet-button" type="button">暂时隐藏</button>
+        <button id="yearConfirmDelete" class="delete-button" type="button">确认删除</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="scripts/motion.js"></script>
+  <script src="scripts/moments-store.js"></script>
+  <script src="scripts/moments.js"></script>
+</body>
+</html>

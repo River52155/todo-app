@@ -3,13 +3,21 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>每日任务清单</title>
+  <title>每日计划 | 去体验更好的事物</title>
   <link rel="stylesheet" href="styles/motion.css" />
   <style>
+    @font-face {
+      font-family: "Ma Shan Zheng";
+      src: url("assets/fonts/MaShanZheng-Regular.ttf") format("truetype");
+      font-style: normal;
+      font-weight: 400;
+      font-display: swap;
+    }
+
     * { margin: 0; padding: 0; box-sizing: border-box; }
 
     body {
-      font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+      font-family: "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", "Noto Sans SC", sans-serif;
       background: url("assets/bg.png") no-repeat center center fixed;
       background-size: cover;
       min-height: 100vh;
@@ -22,21 +30,187 @@
       content: "";
       position: fixed;
       inset: 0;
-      background: rgba(0, 0, 0, 0.22);
+      background:
+        linear-gradient(180deg, rgba(9, 8, 16, 0.18) 0%, rgba(12, 12, 24, 0.36) 100%),
+        rgba(0, 0, 0, 0.2);
+      z-index: -2;
+    }
+
+    body::after {
+      content: "";
+      position: fixed;
+      inset: 0;
+      background:
+        radial-gradient(circle at 20% 16%, rgba(255, 205, 156, 0.18), transparent 34%),
+        radial-gradient(circle at 78% 18%, rgba(240, 153, 214, 0.16), transparent 30%),
+        radial-gradient(circle at 52% 4%, rgba(158, 182, 255, 0.14), transparent 24%);
       z-index: -1;
+      pointer-events: none;
     }
 
     .container {
-      max-width: 1200px;
+      max-width: 1220px;
       margin: 0 auto;
     }
 
-    h1 {
+    .hero-section {
+      position: relative;
+      padding: 22px 0 18px;
+      margin-bottom: 18px;
       text-align: center;
-      margin-bottom: 24px;
-      font-size: 2.2em;
-      text-shadow: 0 2px 10px rgba(0,0,0,0.8), 0 0 30px rgba(100, 200, 255, 0.3);
-      letter-spacing: 1px;
+      isolation: isolate;
+    }
+
+    .hero-section::before {
+      content: "";
+      position: absolute;
+      inset: 8px 7% auto;
+      height: 240px;
+      border-radius: 999px;
+      background:
+        radial-gradient(circle at 22% 48%, rgba(255, 213, 174, 0.16), transparent 34%),
+        radial-gradient(circle at 75% 38%, rgba(218, 174, 255, 0.16), transparent 36%),
+        radial-gradient(circle at 50% 0%, rgba(166, 187, 255, 0.12), transparent 34%);
+      filter: blur(20px);
+      z-index: -1;
+      pointer-events: none;
+    }
+
+    .hero-copy {
+      position: relative;
+      max-width: 980px;
+      margin: 0 auto;
+      padding: 10px 20px 0;
+    }
+
+    .hero-copy::before {
+      content: "";
+      position: absolute;
+      left: 14%;
+      right: 14%;
+      top: 4px;
+      height: 82%;
+      border-radius: 999px;
+      background: linear-gradient(180deg, rgba(14, 14, 24, 0.18), rgba(14, 14, 24, 0.02));
+      filter: blur(28px);
+      z-index: -1;
+    }
+
+    .hero-kicker {
+      display: inline-flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 18px;
+      color: rgba(242, 222, 202, 0.92);
+      font-size: 12px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+    }
+
+    .hero-kicker::before,
+    .hero-kicker::after {
+      content: "";
+      width: 46px;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(242, 222, 202, 0.56), transparent);
+    }
+
+    .hero-title {
+      margin: 0 auto;
+      max-width: 980px;
+      font-family: "Ma Shan Zheng", "STKaiti", "KaiTi", "Kaiti SC", "Noto Serif SC", serif;
+      font-size: clamp(2.3rem, 4.9vw, 4.2rem);
+      line-height: 1.2;
+      letter-spacing: 0.02em;
+      font-weight: 400;
+      color: #fff8f3;
+      text-shadow:
+        0 6px 22px rgba(8, 7, 16, 0.28),
+        0 0 24px rgba(248, 208, 183, 0.08),
+        0 0 38px rgba(223, 193, 255, 0.08);
+      text-wrap: balance;
+      transition: opacity 0.36s ease, transform 0.36s ease, filter 0.36s ease;
+      will-change: opacity, transform, filter;
+    }
+
+    .hero-title-rotator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 9.8rem;
+      padding: 0 8px;
+    }
+
+    .hero-title.is-leaving,
+    .hero-title.is-entering {
+      opacity: 0;
+      filter: blur(6px);
+    }
+
+    .hero-title.is-leaving {
+      transform: translateY(18px) scale(0.985);
+    }
+
+    .hero-title.is-entering {
+      transform: translateY(-18px) scale(1.015);
+    }
+
+    .hero-rotator-toggle-wrap {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      margin-top: 18px;
+    }
+
+    .hero-rotator-toggle {
+      min-width: 136px;
+      min-height: 46px;
+      padding: 11px 24px;
+      border: 1px solid rgba(255, 244, 238, 0.16);
+      border-radius: 999px;
+      background: linear-gradient(135deg, rgba(35, 30, 46, 0.6), rgba(72, 52, 82, 0.38));
+      color: rgba(255, 243, 238, 0.92);
+      font-size: 0.98rem;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      font-weight: 600;
+      cursor: pointer;
+      backdrop-filter: blur(14px);
+      box-shadow:
+        0 10px 26px rgba(10, 10, 20, 0.2),
+        inset 0 0 0 1px rgba(255, 255, 255, 0.06);
+      transition: transform 0.24s ease, background 0.24s ease, border-color 0.24s ease, box-shadow 0.24s ease;
+    }
+
+    .hero-rotator-toggle:hover {
+      transform: translateY(-1px);
+      background: linear-gradient(135deg, rgba(71, 55, 94, 0.72), rgba(109, 77, 124, 0.48));
+      border-color: rgba(255, 232, 222, 0.26);
+      box-shadow:
+        0 14px 30px rgba(16, 14, 28, 0.24),
+        0 0 26px rgba(236, 202, 221, 0.16);
+    }
+
+    .hero-rotator-toggle.is-active {
+      background: linear-gradient(90deg, rgba(255, 221, 200, 0.96), rgba(226, 194, 255, 0.94));
+      color: rgba(49, 27, 63, 0.9);
+      border-color: rgba(255, 248, 244, 0.42);
+      box-shadow:
+        0 0 22px rgba(232, 196, 232, 0.28),
+        0 10px 26px rgba(31, 18, 38, 0.18);
+    }
+
+    .hero-subtitle {
+      max-width: 780px;
+      margin: 20px auto 0;
+      padding: 0 16px;
+      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Sans SC", sans-serif;
+      color: rgba(248, 238, 231, 0.8);
+      font-size: clamp(1rem, 1.28vw, 1.08rem);
+      line-height: 1.95;
+      letter-spacing: 0.01em;
+      text-shadow: 0 1px 10px rgba(5, 6, 18, 0.24);
+      text-wrap: balance;
     }
 
     .page-nav {
@@ -44,47 +218,49 @@
       flex-wrap: wrap;
       gap: 10px;
       justify-content: center;
-      margin-bottom: 22px;
+      margin-bottom: 26px;
     }
 
     .nav-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 10px 16px;
+      padding: 11px 18px;
       border-radius: 999px;
-      background: rgba(20, 25, 40, 0.5);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      color: #cbd5e0;
+      background: rgba(17, 20, 33, 0.24);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      color: rgba(245, 236, 240, 0.88);
       text-decoration: none;
-      transition: transform 0.2s, background 0.2s, color 0.2s;
-      backdrop-filter: blur(10px);
+      transition: transform 0.2s, background 0.2s, color 0.2s, border-color 0.2s;
+      backdrop-filter: blur(8px);
+      box-shadow: 0 6px 20px rgba(12, 10, 22, 0.12);
     }
 
     .nav-link:hover,
     .nav-link.active {
-      background: rgba(99, 179, 237, 0.3);
-      color: #f7fafc;
+      background: linear-gradient(135deg, rgba(155, 172, 242, 0.26), rgba(242, 182, 207, 0.22));
+      color: #fffdfc;
       transform: translateY(-1px);
+      border-color: rgba(245, 220, 255, 0.16);
     }
 
     .stats {
       display: flex;
       justify-content: space-around;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
       flex-wrap: wrap;
       gap: 15px;
     }
 
     .stat-card {
-      background: rgba(30, 35, 50, 0.5);
+      background: linear-gradient(160deg, rgba(28, 33, 49, 0.58), rgba(42, 36, 55, 0.42));
       backdrop-filter: blur(18px);
       padding: 18px 24px;
-      border-radius: 12px;
+      border-radius: 16px;
       text-align: center;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.28);
       min-width: 140px;
-      border: 1px solid rgba(255, 255, 255, 0.12);
+      border: 1px solid rgba(255, 255, 255, 0.14);
     }
 
     .stat-number {
@@ -102,12 +278,12 @@
     }
 
     .input-section {
-      background: rgba(30, 35, 50, 0.55);
+      background: linear-gradient(160deg, rgba(29, 34, 48, 0.62), rgba(42, 36, 57, 0.46));
       backdrop-filter: blur(20px);
       padding: 22px;
-      border-radius: 15px;
+      border-radius: 18px;
       box-shadow: 0 10px 40px rgba(0,0,0,0.4);
-      margin-bottom: 20px;
+      margin-bottom: 22px;
       border: 1px solid rgba(255, 255, 255, 0.15);
     }
 
@@ -251,6 +427,60 @@
       flex-wrap: wrap;
     }
 
+    .search-toolbar {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 18px;
+      padding: 12px;
+      border-radius: 14px;
+      background: rgba(20, 25, 40, 0.42);
+      backdrop-filter: blur(10px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .task-search-input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid rgba(255, 255, 255, 0.12);
+      border-radius: 999px;
+      font-size: 14px;
+      background: rgba(12, 18, 30, 0.88);
+      background-color: rgba(12, 18, 30, 0.88);
+      color: #f7fafc;
+      color-scheme: dark;
+      transition: border-color 0.25s ease, box-shadow 0.25s ease, background-color 0.25s ease;
+    }
+
+    .task-search-input::placeholder {
+      color: #9db0c4;
+    }
+
+    .task-search-input:focus {
+      outline: none;
+      border-color: rgba(99, 179, 237, 0.55);
+      box-shadow: 0 0 15px rgba(99, 179, 237, 0.14);
+      background-color: rgba(14, 22, 36, 0.96);
+    }
+
+    .search-clear-btn {
+      flex-shrink: 0;
+      min-width: 88px;
+      padding: 10px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 999px;
+      background: rgba(34, 41, 62, 0.82);
+      color: #f1f5f9;
+      cursor: pointer;
+      transition: transform 0.2s ease, background 0.2s ease, border-color 0.2s ease;
+    }
+
+    .search-clear-btn:hover {
+      transform: translateY(-1px);
+      background: rgba(53, 62, 94, 0.92);
+      border-color: rgba(99, 179, 237, 0.32);
+    }
+
     .filter-btn {
       padding: 8px 16px;
       border: 2px solid rgba(255,255,255,0.25);
@@ -291,7 +521,84 @@
     }
 
     @media (max-width: 1100px) {
+      .hero-section {
+        padding: 18px 0 16px;
+      }
+
       .task-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 16px;
+      }
+
+      .hero-section {
+        padding: 12px 0 12px;
+      }
+
+      .hero-copy {
+        padding: 8px 4px 0;
+      }
+
+      .hero-kicker {
+        gap: 10px;
+        margin-bottom: 14px;
+        letter-spacing: 0.2em;
+      }
+
+      .hero-kicker::before,
+      .hero-kicker::after {
+        width: 28px;
+      }
+
+      .hero-title {
+        font-size: clamp(2rem, 8.5vw, 3rem);
+        line-height: 1.2;
+      }
+
+      .hero-title-rotator {
+        min-height: 7.2rem;
+        padding: 0;
+      }
+
+      .hero-subtitle {
+        font-size: 0.96rem;
+        line-height: 1.85;
+        padding: 0 8px;
+      }
+
+      .hero-rotator-toggle-wrap {
+        margin-top: 16px;
+      }
+
+      .hero-rotator-toggle {
+        min-width: 128px;
+        min-height: 44px;
+        padding: 10px 20px;
+        font-size: 0.94rem;
+      }
+
+      .page-nav {
+        gap: 9px;
+      }
+
+      .nav-link {
+        min-width: 132px;
+      }
+
+      .stats {
+        gap: 12px;
+      }
+
+      .search-toolbar {
+        flex-direction: column;
+        align-items: stretch;
+      }
+
+      .search-clear-btn {
+        width: 100%;
+      }
     }
 
     .task-column {
@@ -713,19 +1020,50 @@
       color: #81C784;
       background: rgba(129, 199, 132, 0.15);
     }
+
+    .visually-hidden {
+      position: absolute;
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      margin: -1px;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
+    }
   </style>
+  <link rel="stylesheet" href="styles/page-nav.css" />
 </head>
 <body>
   <div class="container">
-    <h1 data-motion-stage style="--motion-order: 0;">📋 每日任务清单</h1>
-
-            <nav class="page-nav" data-motion-stage style="--motion-order: 1;">
-      <a class="nav-link active" href="index.html" data-hover-pop>每日计划</a>
-      <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
-        <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
-        <a class="nav-link" href="budget.html" data-hover-pop>月度花销</a>
-        <a class="nav-link" href="expenses.html" data-hover-pop>消费记录</a>
+    <nav class="site-top-nav" aria-label="主导航">
+      <a class="site-top-nav__brand" href="index.html">River Todo</a>
+      <div class="page-nav site-top-nav__links">
+        <a class="nav-link active" href="index.html">每日计划</a>
+        <a class="nav-link" href="recent.html">近期计划</a>
+        <a class="nav-link" href="goals.html#overview">长期目标</a>
+        <a class="nav-link" href="budget.html">月度花销</a>
+        <a class="nav-link" href="expenses.html">消费记录</a>
+        <a class="nav-link" href="moments.html">回顾时刻</a>
+      </div>
     </nav>
+
+    <section class="hero-section" data-motion-stage style="--motion-order: 0;">
+      <div class="hero-copy">
+        <div class="hero-kicker">每日计划</div>
+        <div class="hero-title-rotator">
+          <h1 class="hero-title" id="heroTitle" aria-live="polite">我现在的努力，是为了去体验更好的事物</h1>
+        </div>
+        <p class="hero-subtitle">
+          去用英语交流，去痛快地哭，去体验偏执而真诚的爱，也去靠近那些我真正想要的人生片刻
+        </p>
+        <div class="hero-rotator-toggle-wrap">
+          <button class="hero-rotator-toggle" type="button" id="heroRotatorToggle" aria-controls="heroTitle" aria-label="切换首页标语" aria-pressed="false">passion</button>
+        </div>
+      </div>
+
+    </section>
 
     <div class="stats" data-motion-stage style="--motion-order: 2;">
       <div class="stat-card" data-hover-pop>
@@ -743,27 +1081,28 @@
     </div>
 
     <div class="input-section" data-motion-stage style="--motion-order: 3;" data-hover-pop>
+      <label class="visually-hidden" for="taskInput">任务内容</label>
       <input type="text" class="task-input" id="taskInput" placeholder="请输入任务内容..." />
 
       <div class="input-grid">
         <div class="input-group">
-          <label>📅 日期</label>
+          <label for="dateInput">📅 日期</label>
           <input type="date" id="dateInput" />
         </div>
         <div class="input-group">
-          <label>🕒 时间</label>
+          <label for="timeInput">🕒 时间</label>
           <input type="time" id="timeInput" />
         </div>
         <div class="input-group">
-          <label>📍 地点</label>
+          <label for="locationInput">📍 地点</label>
           <input type="text" id="locationInput" placeholder="例如：公司、家里" />
         </div>
         <div class="input-group">
-          <label>⏱️ 预计时长（分钟）</label>
+          <label for="durationInput">⏱️ 预计时长（分钟）</label>
           <input type="number" id="durationInput" placeholder="30" min="1" />
         </div>
         <div class="input-group">
-          <label>🔺 优先级</label>
+          <label for="priorityInput">🔺 优先级</label>
           <select id="priorityInput">
             <option value="high">高优先级</option>
             <option value="medium" selected>中优先级</option>
@@ -771,7 +1110,7 @@
           </select>
         </div>
         <div class="input-group">
-          <label>🗂️ 任务类型</label>
+          <label for="taskTypeInput">🗂️ 任务类型</label>
           <select id="taskTypeInput" onchange="onTaskTypeChange()">
             <option value="daily" selected>日常任务</option>
             <option value="weekly">周任务</option>
@@ -780,7 +1119,7 @@
           </select>
         </div>
         <div class="input-group" id="endDateGroup" style="display:none;">
-          <label>📅 结束日期</label>
+          <label for="taskEndDateInput">📅 结束日期</label>
           <input type="date" id="taskEndDateInput" />
         </div>
       </div>
@@ -798,6 +1137,18 @@
       <button class="filter-btn" onclick="filterTasks('today', event)" data-hover-pop>今天</button>
       <button class="filter-btn" onclick="filterTasks('week', event)" data-hover-pop>本周</button>
       <button class="filter-btn" onclick="filterTasks('month', event)" data-hover-pop>本月</button>
+    </div>
+
+    <div class="search-toolbar" id="taskSearchBar" data-motion-stage style="--motion-order: 5.5;">
+      <label class="visually-hidden" for="taskSearchInput">搜索任务</label>
+      <input
+        type="search"
+        class="task-search-input"
+        id="taskSearchInput"
+        placeholder="搜索任务、地点或任务类型"
+        oninput="handleSearchInput(event)"
+      />
+      <button class="search-clear-btn" id="taskSearchClear" type="button" onclick="clearSearch()" hidden>清空搜索</button>
     </div>
 
     <div class="task-grid motion-swap" id="taskGrid" data-motion-stage style="--motion-order: 6;">
@@ -818,24 +1169,121 @@
 
   <script src="scripts/motion.js"></script>
   <script>
-    let tasks = JSON.parse(localStorage.getItem("tasks")) || [];
+    const TASKS_STORAGE_KEY = "tasks";
+    const TASK_TYPES = ["daily", "weekly", "monthly", "halfYear"];
+    const PRIORITIES = ["high", "medium", "low"];
+
+    let tasks = loadTasks();
     let currentFilter = "all";
     let currentView = "tasks";
+    let currentSearchTerm = "";
     const uiSections = {
       input: document.querySelector(".input-section"),
       stats: document.querySelector(".stats"),
       filters: document.getElementById("taskFilters"),
+      search: document.getElementById("taskSearchBar"),
       taskGrid: document.getElementById("taskGrid")
     };
+    const taskSearchInput = document.getElementById("taskSearchInput");
+    const taskSearchClear = document.getElementById("taskSearchClear");
+    const heroSlides = [
+      "我现在的努力，是为了去体验更好的事物",
+      "管不好事，就要被事管"
+    ];
+    const heroTitle = document.getElementById("heroTitle");
+    const heroRotatorToggle = document.getElementById("heroRotatorToggle");
+    const heroRotationMs = 5200;
+    const heroTransitionMs = 180;
+    let currentHeroSlide = 0;
+    let heroRotationTimer = null;
+    let heroTransitionTimer = null;
 
     document.getElementById("dateInput").valueAsDate = new Date();
     initializeMotionState();
+    initializeHeroRotation();
 
     function initializeMotionState() {
-      [uiSections.input, uiSections.stats, uiSections.filters].forEach(section => {
+      [uiSections.input, uiSections.stats, uiSections.filters, uiSections.search].forEach(section => {
         if (!section) return;
         section.classList.add("motion-section", "is-visible");
       });
+
+      updateSearchUi();
+    }
+
+    function initializeHeroRotation() {
+      if (!heroTitle || heroSlides.length < 2) return;
+
+      heroRotatorToggle?.addEventListener("click", toggleHeroSlide);
+
+      showHeroSlide(0, { immediate: true });
+      startHeroRotation();
+
+      document.addEventListener("visibilitychange", () => {
+        if (document.hidden) {
+          window.clearInterval(heroRotationTimer);
+          return;
+        }
+
+        startHeroRotation();
+      });
+    }
+
+    function syncHeroToggle() {
+      if (!heroRotatorToggle) return;
+      const isSecondSlide = currentHeroSlide === 1;
+      heroRotatorToggle.classList.toggle("is-active", isSecondSlide);
+      heroRotatorToggle.setAttribute("aria-pressed", String(isSecondSlide));
+      heroRotatorToggle.setAttribute(
+        "aria-label",
+        isSecondSlide ? "切换回第一句标语" : "切换到第二句标语"
+      );
+    }
+
+    function toggleHeroSlide() {
+      if (!heroTitle || heroSlides.length < 2) return;
+      showHeroSlide((currentHeroSlide + 1) % heroSlides.length);
+      startHeroRotation();
+    }
+
+    function showHeroSlide(index, { immediate = false } = {}) {
+      if (!heroTitle || !heroSlides[index]) return;
+
+      window.clearTimeout(heroTransitionTimer);
+      heroTitle.classList.remove("is-entering");
+
+      if (immediate) {
+        currentHeroSlide = index;
+        heroTitle.textContent = heroSlides[currentHeroSlide];
+        heroTitle.classList.remove("is-leaving");
+        syncHeroToggle();
+        return;
+      }
+
+      heroTitle.classList.add("is-leaving");
+
+      heroTransitionTimer = window.setTimeout(() => {
+        currentHeroSlide = index;
+        heroTitle.textContent = heroSlides[currentHeroSlide];
+        syncHeroToggle();
+        heroTitle.classList.remove("is-leaving");
+        heroTitle.classList.add("is-entering");
+
+        requestAnimationFrame(() => {
+          requestAnimationFrame(() => {
+            heroTitle.classList.remove("is-entering");
+          });
+        });
+      }, heroTransitionMs);
+    }
+
+    function startHeroRotation() {
+      if (!heroTitle || heroSlides.length < 2) return;
+
+      window.clearInterval(heroRotationTimer);
+      heroRotationTimer = window.setInterval(() => {
+        showHeroSlide((currentHeroSlide + 1) % heroSlides.length);
+      }, heroRotationMs);
     }
 
     function setDailyPanelsVisible(visible) {
@@ -851,6 +1299,58 @@
       PageMotion.setVisibility(uiSections.filters, visible, { displayValue: "flex" });
     }
 
+    function normalizeSearchText(value) {
+      return String(value || "").trim().toLowerCase();
+    }
+
+    function getTaskSearchText(task) {
+      const parts = [
+        task.title,
+        task.location,
+        task.date,
+        task.time,
+        task.priority,
+        getTaskTypeLabel(task.taskType)
+      ];
+
+      return normalizeSearchText(parts.filter(Boolean).join(" "));
+    }
+
+    function matchesCurrentSearch(task) {
+      if (!currentSearchTerm) return true;
+      return getTaskSearchText(task).includes(currentSearchTerm);
+    }
+
+    function updateSearchUi() {
+      if (taskSearchClear) {
+        taskSearchClear.hidden = !currentSearchTerm;
+      }
+    }
+
+    function handleSearchInput(event) {
+      currentSearchTerm = normalizeSearchText(event?.target?.value);
+      updateSearchUi();
+
+      transitionTaskContent(() => {
+        if (currentView === "history") renderHistory();
+        else renderTasks();
+      });
+    }
+
+    function clearSearch() {
+      currentSearchTerm = "";
+      if (taskSearchInput) {
+        taskSearchInput.value = "";
+        taskSearchInput.focus();
+      }
+      updateSearchUi();
+
+      transitionTaskContent(() => {
+        if (currentView === "history") renderHistory();
+        else renderTasks();
+      });
+    }
+
     function transitionTaskContent(render) {
       if (!window.PageMotion || !uiSections.taskGrid) {
         render();
@@ -863,8 +1363,81 @@
       });
     }
 
+    function loadTasks() {
+      try {
+        const rawTasks = localStorage.getItem(TASKS_STORAGE_KEY);
+        if (!rawTasks) {
+          return [];
+        }
+
+        const parsedTasks = JSON.parse(rawTasks);
+        if (!Array.isArray(parsedTasks)) {
+          return [];
+        }
+
+        return parsedTasks
+          .filter(task => task && typeof task === "object")
+          .map(normalizeTask)
+          .filter(task => task.title);
+      } catch (error) {
+        console.warn("任务数据读取失败，已使用空列表。", error);
+        return [];
+      }
+    }
+
+    function normalizeTask(task) {
+      const progress = normalizeProgress(task.progress);
+      const completed = Boolean(task.completed) || progress >= 100;
+      const createdAt = normalizeDateTime(task.createdAt) || new Date().toISOString();
+
+      return {
+        id: normalizeTaskId(task.id),
+        title: String(task.title || "").trim(),
+        date: normalizeDateValue(task.date) || formatDateKey(new Date()),
+        time: String(task.time || ""),
+        location: String(task.location || "").trim(),
+        duration: String(task.duration || ""),
+        priority: PRIORITIES.includes(task.priority) ? task.priority : "medium",
+        taskType: TASK_TYPES.includes(task.taskType) ? task.taskType : "daily",
+        taskEndDate: normalizeDateValue(task.taskEndDate) || null,
+        progress,
+        progressHistory: Array.isArray(task.progressHistory) ? task.progressHistory : [],
+        completed,
+        completedAt: completed ? normalizeDateTime(task.completedAt) || new Date().toISOString() : "",
+        createdAt
+      };
+    }
+
+    function normalizeTaskId(value) {
+      const number = Number(value);
+      return Number.isFinite(number) && number > 0 ? number : createTaskId();
+    }
+
+    function normalizeProgress(value) {
+      const number = Number(value);
+      if (!Number.isFinite(number)) return 0;
+      return Math.max(0, Math.min(100, Math.round(number)));
+    }
+
+    function normalizeDateValue(value) {
+      const text = String(value || "").trim();
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return "";
+      const date = new Date(text);
+      return Number.isNaN(date.getTime()) ? "" : text;
+    }
+
+    function normalizeDateTime(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? "" : date.toISOString();
+    }
+
+    function createTaskId() {
+      return Date.now() + Math.floor(Math.random() * 1000);
+    }
+
     function saveTasks() {
-      localStorage.setItem("tasks", JSON.stringify(tasks));
+      localStorage.setItem(TASKS_STORAGE_KEY, JSON.stringify(tasks));
       updateStats();
     }
 
@@ -895,7 +1468,7 @@
 
       const taskType = taskTypeInput.value;
       const task = {
-        id: Date.now(),
+        id: createTaskId(),
         title: taskInput.value.trim(),
         date: dateInput.value || formatDateKey(new Date()),
         time: timeInput.value,
@@ -1120,6 +1693,10 @@
         const taskDate = new Date(task.date);
         taskDate.setHours(0, 0, 0, 0);
 
+        if (!matchesCurrentSearch(task)) {
+          return false;
+        }
+
         switch (currentFilter) {
           case "today":
             return taskDate.getTime() === today.getTime();
@@ -1144,6 +1721,7 @@
     function getCompletedTasks() {
       return tasks
         .filter(task => task.completed)
+        .filter(matchesCurrentSearch)
         .sort((a, b) => new Date(b.completedAt || b.createdAt) - new Date(a.completedAt || a.createdAt));
     }
 
@@ -1201,12 +1779,13 @@
       if (!taskList) return;
 
       if (columnTasks.length === 0) {
+        const emptyMessage = currentSearchTerm ? `没有匹配当前搜索的${listId === "weeklyList" ? "周任务" : listId === "monthlyList" ? "月任务" : "日任务"}` : "暂无任务";
         taskList.innerHTML = `
           <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
-            <p>暂无任务</p>
+            <p>${emptyMessage}</p>
           </div>
         `;
         return;
@@ -1278,12 +1857,13 @@
       const completedTasks = getCompletedTasks();
 
       if (completedTasks.length === 0) {
+        const emptyMessage = currentSearchTerm ? "没有匹配当前搜索的已完成任务" : "暂无已完成任务";
         taskList.innerHTML = `
           <div class="empty-state">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
             </svg>
-            <p>暂无已完成任务</p>
+            <p>${emptyMessage}</p>
           </div>
         `;
         window.PageMotion?.reconcilePendingRemovals?.();

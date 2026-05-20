@@ -23,6 +23,8 @@ const ExpensesApp = (() => {
   const state = {
     selectedRange: DEFAULT_RANGE,
     selectedForecastMonth: getCurrentMonthKey(),
+    selectedRecordsMonth: getCurrentMonthKey(),
+    selectedRecordDate: getTodayValue(),
     store: null
   };
 
@@ -102,6 +104,30 @@ const ExpensesApp = (() => {
       saveCustomCategory();
     });
 
+    document.getElementById("recordsMonthInput")?.addEventListener("change", event => {
+      const nextMonth = normalizeMonthValue(event.target.value);
+      if (!nextMonth || nextMonth === state.selectedRecordsMonth) {
+        event.target.value = state.selectedRecordsMonth;
+        return;
+      }
+
+      state.selectedRecordsMonth = nextMonth;
+      state.selectedRecordDate = "";
+      renderRecordsMonthView();
+    });
+
+    document.getElementById("recordsPrevMonth")?.addEventListener("click", () => {
+      state.selectedRecordsMonth = shiftMonth(state.selectedRecordsMonth, -1);
+      state.selectedRecordDate = "";
+      renderRecordsMonthView();
+    });
+
+    document.getElementById("recordsNextMonth")?.addEventListener("click", () => {
+      state.selectedRecordsMonth = shiftMonth(state.selectedRecordsMonth, 1);
+      state.selectedRecordDate = "";
+      renderRecordsMonthView();
+    });
+
     document.getElementById("fixedForecastForm")?.addEventListener("submit", event => {
       event.preventDefault();
       saveFixedForecastTemplate();
@@ -122,6 +148,14 @@ const ExpensesApp = (() => {
       if (button.dataset.action === "delete") deleteExpenseRecord(id, button);
     });
 
+    document.getElementById("recordsMonthGrid")?.addEventListener("click", event => {
+      const button = event.target.closest("[data-record-day]");
+      if (!button) return;
+
+      state.selectedRecordDate = button.dataset.recordDay;
+      renderRecordsMonthView();
+    });
+
     document.getElementById("forecastFixedList")?.addEventListener("click", handleForecastListClick);
     document.getElementById("forecastOneOffList")?.addEventListener("click", handleForecastListClick);
     document.getElementById("fixedForecastTemplatesList")?.addEventListener("click", handleFixedTemplateListClick);
@@ -134,6 +168,7 @@ const ExpensesApp = (() => {
     renderHero();
     renderForecastSection();
     renderRangeInsights({ animate: false });
+    renderRecordsMonthView();
 
     if (options.resetForm) {
       resetExpenseForm();
@@ -317,24 +352,13 @@ const ExpensesApp = (() => {
   function renderRangeInsights(options = {}) {
     const rangeStats = getRangeStats(state.selectedRange, state.store.records);
     const categoryBreakdown = getCategoryBreakdown(rangeStats.records, state.store.categories);
-    const trendPoints = buildTrendPoints(state.selectedRange, rangeStats.records);
+    const trendView = buildTrendView(state.selectedRange, rangeStats.records, rangeStats.info);
 
     const renderCategory = () => renderCategoryAnalysis(rangeStats, categoryBreakdown);
-    const renderTrend = () => renderTrendChart(trendPoints);
-    const renderRecordsView = () => renderRecords(rangeStats.records);
+    const renderTrend = () => renderTrendChart(trendView);
 
-    if (!options.animate || !window.PageMotion) {
-      renderCategory();
-      renderTrend();
-      renderRecordsView();
-      return;
-    }
-
-    Promise.all([
-      window.PageMotion.animateSwap(document.getElementById("categoryChartPanel"), renderCategory, { outMs: 150, inMs: 240 }),
-      window.PageMotion.animateSwap(document.getElementById("trendChartShell"), renderTrend, { outMs: 150, inMs: 240 }),
-      window.PageMotion.animateSwap(document.getElementById("recordsList"), renderRecordsView, { outMs: 150, inMs: 240 })
-    ]);
+    renderCategory();
+    renderTrend();
   }
 
   function renderCategoryAnalysis(rangeStats, breakdown) {
@@ -381,33 +405,43 @@ const ExpensesApp = (() => {
     `).join("");
   }
 
-  function renderTrendChart(points) {
+  function renderTrendChart(view) {
     const container = document.getElementById("trendChartShell");
     if (!container) return;
 
-    const meta = RANGE_META[state.selectedRange];
+    const trendView = view || { range: state.selectedRange, layout: "bars", maxTotal: 0, points: [] };
+    const meta = RANGE_META[trendView.range] || RANGE_META.month;
     setText("trendRangeLabel", `当前查看：${meta.trendLabel}`);
+    container.className = `trend-chart-shell trend-chart-shell--${escapeAttribute(trendView.range)}`;
+    container.dataset.range = trendView.range;
 
-    if (!points.length || points.every(point => point.total <= 0)) {
+    if (!trendView.points.length || trendView.points.every(point => point.total <= 0)) {
       container.innerHTML = `
-        <div class="empty-state">
+        <div class="empty-state trend-empty">
           <strong>当前范围暂无趋势数据</strong>
-          <span>在这个时间范围内新增消费后，这里会自动展示趋势图。</span>
+          <span>新增消费后，这里会按当前范围展示更紧凑的趋势。</span>
         </div>
       `;
       return;
     }
 
-    const maxValue = Math.max(...points.map(point => point.total), 1);
-    const minColumnWidth = state.selectedRange === "month" ? 34 : state.selectedRange === "day" ? 28 : 48;
+    container.innerHTML = trendView.layout === "month-squares"
+      ? renderTrendYearOverview(trendView)
+      : renderTrendBars(trendView);
+  }
 
-    container.innerHTML = `
-      <div class="trend-grid" style="grid-template-columns: repeat(${points.length}, minmax(${minColumnWidth}px, 1fr)); min-width: ${points.length * minColumnWidth}px;">
-        ${points.map(point => {
+  function renderTrendBars(view) {
+    const minColumnWidth = view.range === "month" ? 26 : view.range === "day" ? 24 : 44;
+    const minWidth = view.range === "week" ? "100%" : `${view.points.length * minColumnWidth}px`;
+    const maxValue = Math.max(view.maxTotal, 1);
+
+    return `
+      <div class="trend-grid trend-grid--${escapeAttribute(view.range)}" style="grid-template-columns: repeat(${view.points.length}, minmax(${minColumnWidth}px, 1fr)); min-width: ${minWidth};">
+        ${view.points.map(point => {
           const height = Math.max((point.total / maxValue) * 100, point.total > 0 ? 4 : 0);
           return `
-            <div class="trend-bar" title="${escapeAttribute(point.title)}">
-              <div class="trend-value">${point.total > 0 ? formatCurrency(point.total) : ""}</div>
+            <div class="trend-bar ${point.total > 0 ? "has-value" : "is-empty"}" title="${escapeAttribute(point.title)}">
+              <div class="trend-value">${point.total > 0 ? escapeHtml(point.totalText) : ""}</div>
               <div class="trend-track">
                 <div class="trend-fill" style="height:${height}%"></div>
               </div>
@@ -416,6 +450,164 @@ const ExpensesApp = (() => {
           `;
         }).join("")}
       </div>
+    `;
+  }
+
+  function renderTrendYearOverview(view) {
+    return `
+      <div class="trend-year-grid" aria-label="本年每月消费概览">
+        ${view.points.map(point => `
+          <div class="trend-year-cell trend-year-cell--level-${point.level}" title="${escapeAttribute(point.title)}">
+            <span class="trend-year-month">${escapeHtml(point.label)}</span>
+            <strong class="trend-year-amount">${escapeHtml(point.totalText)}</strong>
+            <span class="trend-year-count">${point.count ? `${point.count} 笔` : "无记录"}</span>
+          </div>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderRecordsMonthView() {
+    const view = buildRecordsMonthView(state.store.records, state.selectedRecordsMonth);
+    state.selectedRecordsMonth = view.month;
+    syncRecordsMonthInput();
+
+    if (!view.days.some(day => day.date === state.selectedRecordDate)) {
+      const today = getTodayValue();
+      const defaultDay = view.days.find(day => day.date === today)
+        || view.days.find(day => day.count > 0)
+        || view.days[0];
+      state.selectedRecordDate = defaultDay?.date || `${view.month}-01`;
+    }
+
+    const selectedDay = view.days.find(day => day.date === state.selectedRecordDate) || view.days[0];
+
+    setText("recordsSummaryLabel", `${formatForecastMonthLabel(view.month)} 共 ${view.count} 笔记录，合计 ${formatCurrency(view.total)}。`);
+    setText("recordsMonthTotal", formatCurrency(view.total));
+    setText("recordsMonthCount", view.count);
+    setText("recordsActiveDays", view.activeDays);
+
+    renderRecordsMonthGrid(view);
+    renderDayRecords(selectedDay);
+  }
+
+  function syncRecordsMonthInput() {
+    setValue("recordsMonthInput", state.selectedRecordsMonth);
+  }
+
+  function buildRecordsMonthView(records, month) {
+    const targetMonth = normalizeMonthValue(month) || getCurrentMonthKey();
+    const [year, monthNumber] = targetMonth.split("-").map(part => Number.parseInt(part, 10));
+    const monthIndex = monthNumber - 1;
+    const daysInMonth = new Date(year, monthNumber, 0).getDate();
+    const firstDay = new Date(year, monthIndex, 1);
+    const leadingDays = (firstDay.getDay() + 6) % 7;
+    const recordsByDate = new Map();
+
+    records.forEach(record => {
+      if (toMonthKey(record.date) !== targetMonth) return;
+      const dayRecords = recordsByDate.get(record.date) || [];
+      dayRecords.push(record);
+      recordsByDate.set(record.date, dayRecords);
+    });
+
+    const days = Array.from({ length: daysInMonth }, (_, dayIndex) => {
+      const date = toDateValue(new Date(year, monthIndex, dayIndex + 1));
+      const dayRecords = (recordsByDate.get(date) || []).slice().sort(compareExpenseRecords);
+      const total = roundAmount(dayRecords.reduce((sum, record) => sum + record.amount, 0));
+      return {
+        date,
+        day: dayIndex + 1,
+        total,
+        count: dayRecords.length,
+        records: dayRecords
+      };
+    });
+
+    return {
+      month: targetMonth,
+      leadingDays,
+      days,
+      total: roundAmount(days.reduce((sum, day) => sum + day.total, 0)),
+      count: days.reduce((sum, day) => sum + day.count, 0),
+      activeDays: days.filter(day => day.count > 0).length
+    };
+  }
+
+  function renderRecordsMonthGrid(view) {
+    const container = document.getElementById("recordsMonthGrid");
+    if (!container) return;
+
+    const placeholders = Array.from({ length: view.leadingDays }, () => `
+      <div class="records-day-card-placeholder" aria-hidden="true"></div>
+    `).join("");
+    const today = getTodayValue();
+
+    container.innerHTML = `${placeholders}${view.days.map(day => {
+      const classes = [
+        "records-day-card",
+        day.count ? "has-records" : "is-empty",
+        day.date === state.selectedRecordDate ? "is-active" : "",
+        day.date === today ? "is-today" : ""
+      ].filter(Boolean).join(" ");
+      const countLabel = day.count ? `${day.count} 笔` : "无记录";
+      return `
+        <button class="${classes}" type="button" data-record-day="${escapeAttribute(day.date)}" aria-pressed="${day.date === state.selectedRecordDate ? "true" : "false"}">
+          <span class="records-day-number">${day.day}</span>
+          <span class="records-day-total">${day.count ? formatCurrency(day.total) : "¥0.00"}</span>
+          <span class="records-day-count">${countLabel}</span>
+        </button>
+      `;
+    }).join("")}`;
+  }
+
+  function renderDayRecords(day) {
+    const container = document.getElementById("recordsList");
+    if (!container || !day) return;
+
+    setText("recordsDayTitle", formatDateLabel(day.date));
+    setText("recordsDaySummary", day.count
+      ? `${day.count} 笔消费，合计 ${formatCurrency(day.total)}。`
+      : "这一天还没有消费记录。");
+
+    if (!day.records.length) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <strong>这一天还没有记录</strong>
+          <span>点击其它日期，或在左侧快速记一笔。</span>
+        </div>
+      `;
+      window.PageMotion?.reconcilePendingRemovals?.();
+      return;
+    }
+
+    container.innerHTML = day.records.map(renderExpenseRecordItem).join("");
+    window.PageMotion?.reconcilePendingRemovals?.();
+  }
+
+  function renderExpenseRecordItem(record) {
+    const category = getCategoryById(record.categoryId);
+    return `
+      <article class="record-item" data-record-id="${escapeAttribute(record.id)}">
+        <div class="record-main">
+          <div class="record-top">
+            <span class="record-category">
+              <span class="category-dot" style="background:${escapeAttribute(category.color)}"></span>
+              <span>${escapeHtml(category.icon)} ${escapeHtml(category.name)}</span>
+            </span>
+            <span class="record-date">${escapeHtml(formatDateLabel(record.date))}</span>
+            <span class="record-chip">录入于 ${escapeHtml(formatDateTime(record.createdAt))}</span>
+          </div>
+          <p class="record-note">${escapeHtml(record.note || "未填写备注")}</p>
+        </div>
+        <div class="record-side">
+          <div class="record-amount">${formatCurrency(record.amount)}</div>
+          <div class="record-actions">
+            <button class="btn-secondary" type="button" data-action="edit" data-id="${escapeAttribute(record.id)}">编辑</button>
+            <button class="btn-danger" type="button" data-action="delete" data-id="${escapeAttribute(record.id)}">删除</button>
+          </div>
+        </div>
+      </article>
     `;
   }
 
@@ -512,6 +704,8 @@ const ExpensesApp = (() => {
     }
 
     state.store = saveExpenseStore(nextStore);
+    state.selectedRecordsMonth = toMonthKey(date) || state.selectedRecordsMonth;
+    state.selectedRecordDate = date;
     renderAll({ resetForm: true });
     setStatus("expenseFormStatus", editingId ? "消费记录已更新" : "消费记录已保存", true);
   }
@@ -519,6 +713,10 @@ const ExpensesApp = (() => {
   function editExpenseRecord(id) {
     const record = state.store.records.find(item => item.id === id);
     if (!record) return;
+
+    state.selectedRecordsMonth = toMonthKey(record.date) || state.selectedRecordsMonth;
+    state.selectedRecordDate = record.date;
+    syncRecordsMonthInput();
 
     setValue("expenseEditingId", record.id);
     setValue("expenseAmountInput", record.amount.toFixed(2));
@@ -1349,69 +1547,123 @@ const ExpensesApp = (() => {
       .sort((a, b) => b.total - a.total);
   }
 
-  function buildTrendPoints(range, records) {
-    if (range === "day") {
-      const totals = Array.from({ length: 24 }, (_, hour) => ({
-        label: `${String(hour).padStart(2, "0")}`,
-        total: 0
-      }));
+  function buildTrendView(range, records, rangeInfo) {
+    const safeRange = RANGE_META[range] ? range : DEFAULT_RANGE;
 
-      records.forEach(record => {
-        const hour = new Date(record.createdAt).getHours();
-        totals[hour].total = roundAmount(totals[hour].total + record.amount);
-      });
-
-      return totals.map((point, index) => ({
-        label: `${String(index).padStart(2, "0")}`,
-        total: point.total,
-        title: `${String(index).padStart(2, "0")}:00 - ${formatCurrency(point.total)}`
-      }));
-    }
-
-    if (range === "week") {
-      const start = startOfWeek(startOfDay(new Date()));
-      const labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
-      return labels.map((label, index) => {
-        const dateValue = toDateValue(addDays(start, index));
-        const total = roundAmount(records.filter(record => record.date === dateValue).reduce((sum, record) => sum + record.amount, 0));
-        return {
+    if (safeRange === "day") {
+      const points = Array.from({ length: 24 }, (_, hour) => {
+        const label = String(hour).padStart(2, "0");
+        const hourRecords = records.filter(record => {
+          const createdAt = new Date(record.createdAt);
+          return !Number.isNaN(createdAt.getTime()) && createdAt.getHours() === hour;
+        });
+        return createTrendPoint({
+          key: `hour-${label}`,
           label,
-          total,
-          title: `${label} - ${formatCurrency(total)}`
-        };
+          total: sumRecords(hourRecords),
+          count: hourRecords.length,
+          title: `${label}:00 - ${formatCurrency(sumRecords(hourRecords))}`
+        });
       });
+
+      return createTrendView("day", "bars", points);
     }
 
-    if (range === "year") {
-      const year = new Date().getFullYear();
-      return Array.from({ length: 12 }, (_, month) => {
-        const total = roundAmount(records.filter(record => {
-          const date = parseDateValue(record.date);
-          return date.getFullYear() === year && date.getMonth() === month;
-        }).reduce((sum, record) => sum + record.amount, 0));
+    if (safeRange === "week") {
+      const start = rangeInfo?.start ? startOfDay(rangeInfo.start) : startOfWeek(startOfDay(new Date()));
+      const labels = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"];
+      const points = labels.map((label, index) => {
+        const date = toDateValue(addDays(start, index));
+        const dayRecords = records.filter(record => record.date === date);
+        return createTrendPoint({
+          key: `week-${date}`,
+          label,
+          date,
+          total: sumRecords(dayRecords),
+          count: dayRecords.length,
+          title: `${label} ${formatDateLabel(date)} - ${formatCurrency(sumRecords(dayRecords))}`
+        });
+      });
 
-        return {
+      return createTrendView("week", "bars", points);
+    }
+
+    if (safeRange === "year") {
+      const start = rangeInfo?.start || new Date();
+      const year = start.getFullYear();
+      const rawPoints = Array.from({ length: 12 }, (_, month) => {
+        const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+        const monthRecords = records.filter(record => toMonthKey(record.date) === monthKey);
+        return createTrendPoint({
+          key: `month-${monthKey}`,
           label: `${month + 1}月`,
-          total,
-          title: `${month + 1}月 - ${formatCurrency(total)}`
-        };
+          monthKey,
+          total: sumRecords(monthRecords),
+          count: monthRecords.length,
+          title: `${year}年${month + 1}月 - ${formatCurrency(sumRecords(monthRecords))}`
+        });
       });
+
+      return {
+        ...createTrendView("year", "month-squares", rawPoints),
+        layout: "month-squares"
+      };
     }
 
-    const now = new Date();
-    const year = now.getFullYear();
-    const month = now.getMonth();
+    const start = rangeInfo?.start || new Date(new Date().getFullYear(), new Date().getMonth(), 1);
+    const year = start.getFullYear();
+    const month = start.getMonth();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-
-    return Array.from({ length: daysInMonth }, (_, dayIndex) => {
-      const dateValue = toDateValue(new Date(year, month, dayIndex + 1));
-      const total = roundAmount(records.filter(record => record.date === dateValue).reduce((sum, record) => sum + record.amount, 0));
-      return {
+    const points = Array.from({ length: daysInMonth }, (_, dayIndex) => {
+      const date = toDateValue(new Date(year, month, dayIndex + 1));
+      const dayRecords = records.filter(record => record.date === date);
+      return createTrendPoint({
+        key: `day-${date}`,
         label: `${dayIndex + 1}`,
-        total,
-        title: `${dayIndex + 1}日 - ${formatCurrency(total)}`
-      };
+        date,
+        total: sumRecords(dayRecords),
+        count: dayRecords.length,
+        title: `${formatDateLabel(date)} - ${formatCurrency(sumRecords(dayRecords))}`
+      });
     });
+
+    return createTrendView("month", "bars", points);
+  }
+
+  function createTrendView(range, layout, points) {
+    const maxTotal = Math.max(...points.map(point => point.total), 0);
+    return {
+      range,
+      layout,
+      maxTotal,
+      points: points.map(point => ({
+        ...point,
+        level: getTrendLevel(point.total, maxTotal)
+      }))
+    };
+  }
+
+  function createTrendPoint(point) {
+    const total = roundAmount(point.total);
+    return {
+      key: point.key,
+      label: point.label,
+      title: point.title,
+      total,
+      totalText: formatCurrency(total),
+      count: point.count || 0,
+      date: point.date || "",
+      monthKey: point.monthKey || ""
+    };
+  }
+
+  function sumRecords(records) {
+    return roundAmount(records.reduce((sum, record) => sum + record.amount, 0));
+  }
+
+  function getTrendLevel(total, maxTotal) {
+    if (!total || !maxTotal) return 0;
+    return Math.max(1, Math.ceil((total / maxTotal) * 4));
   }
 
   function applyDonutChart(element, breakdown) {
@@ -1557,6 +1809,11 @@ const ExpensesApp = (() => {
     const month = normalizeMonthValue(monthValue) || getCurrentMonthKey();
     const [year, monthIndex] = month.split("-").map(part => Number.parseInt(part, 10));
     return `${new Date(year, monthIndex - 1 + delta, 1).getFullYear()}-${String(new Date(year, monthIndex - 1 + delta, 1).getMonth() + 1).padStart(2, "0")}`;
+  }
+
+  function compareExpenseRecords(a, b) {
+    if (a.date !== b.date) return b.date.localeCompare(a.date);
+    return String(b.createdAt || "").localeCompare(String(a.createdAt || ""));
   }
 
   function compareForecastItems(a, b) {

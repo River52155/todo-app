@@ -1,0 +1,105 @@
+.site-top-nav {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: center;
+  gap: 24px;
+  margin: 0 0 18px;
+  padding: 0 0 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.site-top-nav__brand {
+  color: rgba(248, 250, 252, 0.96);
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.site-top-nav .page-nav,
+.site-top-nav__links {
+  display: flex;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 6px;
+  margin: 0;
+  padding: 4px 2px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.site-top-nav .page-nav::-webkit-scrollbar,
+.site-top-nav__links::-webkit-scrollbar {
+  display: none;
+}
+
+.site-top-nav .nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  width: auto;
+  min-width: max-content;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: 8px;
+  background: transparent;
+  border: 1px solid transparent;
+  box-shadow: none;
+  color: rgba(203, 213, 225, 0.86);
+  font-size: clamp(1rem, 1.45vw, 1.22rem);
+  font-weight: 800;
+  letter-spacing: 0;
+  text-decoration: none;
+  backdrop-filter: none;
+  transition: background 0.18s ease, border-color 0.18s ease, color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.site-top-nav .nav-link:hover,
+.site-top-nav .nav-link:focus-visible {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.12);
+  color: #f8fafc;
+  transform: none;
+}
+
+.site-top-nav .nav-link.active {
+  background:
+    linear-gradient(135deg, rgba(125, 211, 252, 0.18), rgba(251, 191, 36, 0.12)),
+    rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #ffffff;
+  box-shadow: inset 0 -2px 0 rgba(125, 211, 252, 0.76);
+  transform: none;
+}
+
+.site-top-nav .nav-link:focus-visible {
+  outline: 2px solid rgba(125, 211, 252, 0.58);
+  outline-offset: 3px;
+}
+
+@media (max-width: 760px) {
+  .site-top-nav {
+    grid-template-columns: 1fr;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+  }
+
+  .site-top-nav__brand {
+    font-size: 12px;
+  }
+
+  .site-top-nav .page-nav,
+  .site-top-nav__links {
+    justify-content: flex-start;
+    margin-inline: -2px;
+  }
+
+  .site-top-nav .nav-link {
+    min-height: 42px;
+    padding: 9px 14px;
+    font-size: 1rem;
+  }
+}

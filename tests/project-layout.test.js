@@ -41,8 +41,11 @@ test('legacy web prototype files stay at the repository root', () => {
     'recent.html',
     'budget.html',
     'scripts/expenses.js',
+    'scripts/classroom-server.js',
     'styles/budget.css',
-    'assets/bg.png'
+    'assets/bg.png',
+    'assets/fonts/MaShanZheng-Regular.ttf',
+    'start-classroom-demo.cmd'
   ];
 
   expectedFiles.forEach(relativePath => {

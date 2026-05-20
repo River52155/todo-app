@@ -54,6 +54,7 @@ const PageMotion = (() => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
     if (link.target && link.target !== "_self") return false;
     if (link.hasAttribute("download")) return false;
+    if (link.closest(".page-nav, .site-top-nav")) return false;
 
     const href = link.getAttribute("href");
     if (!href || href.startsWith("#")) return false;

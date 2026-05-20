@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256">
+  <defs>
+    <radialGradient id="g" cx="32%" cy="25%" r="78%">
+      <stop offset="0" stop-color="#fff2f6"/>
+      <stop offset=".26" stop-color="#dd95aa"/>
+      <stop offset=".6" stop-color="#91506c"/>
+      <stop offset="1" stop-color="#24101f"/>
+    </radialGradient>
+    <filter id="n">
+      <feTurbulence type="fractalNoise" baseFrequency=".018 .037" numOctaves="5" seed="81"/>
+      <feBlend in="SourceGraphic" mode="overlay"/>
+    </filter>
+    <linearGradient id="shade" x1="0" x2="1">
+      <stop offset="0" stop-color="#ffffff" stop-opacity=".36"/>
+      <stop offset=".5" stop-color="#ffffff" stop-opacity="0"/>
+      <stop offset="1" stop-color="#000000" stop-opacity=".5"/>
+    </linearGradient>
+  </defs>
+  <circle cx="128" cy="128" r="118" fill="url(#g)" filter="url(#n)"/>
+  <path d="M32 91c53 31 126 39 190 12-40 42-142 53-190-12Z" fill="#ffd9e5" opacity=".22"/>
+  <path d="M29 156c68 14 136 15 197-9-46 47-147 59-197 9Z" fill="#4a1f32" opacity=".35"/>
+  <circle cx="128" cy="128" r="118" fill="url(#shade)"/>
+</svg>

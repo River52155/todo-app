@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>消费剪影账本</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="styles/page-nav.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
+  <link rel="stylesheet" href="styles/expense-visual.css" />
+</head>
+<body class="bass-ledger-page">
+  <nav class="site-top-nav" aria-label="主导航">
+    <a class="site-top-nav__brand" href="index.html">River Todo</a>
+    <div class="page-nav site-top-nav__links">
+      <a class="nav-link" href="index.html">每日计划</a>
+      <a class="nav-link" href="recent.html">近期计划</a>
+      <a class="nav-link" href="goals.html#overview">长期目标</a>
+      <a class="nav-link" href="budget.html">月度花销</a>
+      <a class="nav-link active" href="expenses.html">消费记录</a>
+      <a class="nav-link" href="moments.html">回顾时刻</a>
+    </div>
+  </nav>
+
+  <main class="bass-poster" id="expenseVisualApp">
+    <section class="poster-hero" data-motion-stage style="--motion-order: 0;">
+      <div class="paper-cut paper-cut--red" aria-hidden="true"></div>
+      <div class="paper-cut paper-cut--black" aria-hidden="true"></div>
+      <div class="paper-cut paper-cut--blue" aria-hidden="true"></div>
+      <div class="poster-title-block">
+        <p class="poster-kicker">Expense visual export</p>
+        <h1>消费剪影账本</h1>
+        <p>把本地消费记录切成块面、节奏和缺口。先看钱流向哪里，再把数据导出留档。</p>
+      </div>
+      <div class="poster-total-card" aria-label="当前范围消费摘要">
+        <span id="visualRangeLabel">全部记录</span>
+        <strong id="visualTotalAmount">¥0.00</strong>
+        <small id="visualSummary">0 笔记录</small>
+      </div>
+    </section>
+
+    <section class="visual-controls poster-panel" data-motion-stage style="--motion-order: 1;">
+      <div class="field">
+        <label for="visualRangeSelect">范围</label>
+        <select id="visualRangeSelect">
+          <option value="all">全部</option>
+          <option value="year">本年</option>
+          <option value="month">指定月份</option>
+        </select>
+      </div>
+      <div class="field">
+        <label for="visualMonthInput">月份</label>
+        <input id="visualMonthInput" type="month" />
+      </div>
+      <div class="export-actions" aria-label="导出消费记录">
+        <button class="bass-button bass-button--primary" type="button" id="exportExpenseJson">导出 JSON</button>
+        <button class="bass-button" type="button" id="exportExpenseCsv">导出 CSV</button>
+        <button class="bass-button" type="button" id="exportExpenseHtml">导出 HTML</button>
+        <button class="bass-button" type="button" id="printExpenseReport">打印网页</button>
+        <button class="bass-button bass-button--quiet" type="button" id="clearCategoryFocus" hidden>清除聚焦</button>
+        <a class="bass-button bass-button--ghost" href="expenses.html">返回记账</a>
+      </div>
+      <p class="export-status" id="visualExportStatus" aria-live="polite"></p>
+    </section>
+
+    <section class="insight-marquee poster-panel" aria-label="消费洞察建议" data-motion-stage style="--motion-order: 2;">
+      <article class="insight-card insight-card--lead">
+        <span>REPORT</span>
+        <strong id="insightLead">正在生成消费剪影。</strong>
+      </article>
+      <article class="insight-card">
+        <span>RHYTHM</span>
+        <strong id="insightTempo">节奏等待记录。</strong>
+      </article>
+      <article class="insight-card">
+        <span>ADVICE</span>
+        <strong id="insightAdvice">先记录，再判断。</strong>
+      </article>
+      <article class="insight-card">
+        <span>WATCH</span>
+        <strong id="insightRisk">暂无风险。</strong>
+      </article>
+    </section>
+
+    <section class="poster-grid" data-motion-stage style="--motion-order: 2;">
+      <article class="poster-panel category-poster">
+        <div class="panel-heading">
+          <span>01</span>
+          <h2>分类块面</h2>
+        </div>
+        <p class="panel-note" id="categoryFocusLabel">点击一个分类块，可以只看这一类的记录底片和建议。</p>
+        <div class="category-cuts" id="bassCategoryBlocks"></div>
+      </article>
+
+      <article class="poster-panel rhythm-poster">
+        <div class="panel-heading">
+          <span>02</span>
+          <h2>时间切片</h2>
+        </div>
+        <div class="month-cuts" id="bassTimeline"></div>
+      </article>
+
+      <article class="poster-panel incident-poster">
+        <div class="panel-heading">
+          <span>03</span>
+          <h2>最大一刀</h2>
+        </div>
+        <div class="largest-record" id="bassLargestRecord"></div>
+      </article>
+    </section>
+
+    <section class="poster-panel record-poster" data-motion-stage style="--motion-order: 3;">
+      <div class="panel-heading">
+        <span>04</span>
+        <h2>记录底片</h2>
+      </div>
+      <p class="panel-note" id="recordStripLabel">默认展示当前范围内最近 18 笔记录。</p>
+      <div class="record-strips" id="bassRecordTable"></div>
+    </section>
+  </main>
+
+  <script src="scripts/motion.js"></script>
+  <script src="scripts/expense-visual.js"></script>
+</body>
+</html>

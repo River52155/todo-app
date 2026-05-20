@@ -4,27 +4,32 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>消费记录</title>
+  <link rel="icon" href="data:," />
   <link rel="stylesheet" href="styles/expenses.css" />
+  <link rel="stylesheet" href="styles/page-nav.css" />
   <link rel="stylesheet" href="styles/motion.css" />
 </head>
 <body>
   <div class="shell">
-    <header class="page-header page-header--compact glass-panel" data-motion-stage style="--motion-order: 0;">
-      <nav class="page-nav">
-        <a class="nav-link" href="index.html" data-hover-pop>每日计划</a>
-        <a class="nav-link" href="recent.html" data-hover-pop>近期计划</a>
-        <a class="nav-link" href="goals.html#overview" data-hover-pop>长期目标</a>
-        <a class="nav-link" href="budget.html" data-hover-pop>月度花销</a>
-        <a class="nav-link active" href="expenses.html" data-hover-pop>消费记录</a>
-      </nav>
+    <nav class="site-top-nav" aria-label="主导航">
+      <a class="site-top-nav__brand" href="index.html">River Todo</a>
+      <div class="page-nav site-top-nav__links">
+        <a class="nav-link" href="index.html">每日计划</a>
+        <a class="nav-link" href="recent.html">近期计划</a>
+        <a class="nav-link" href="goals.html#overview">长期目标</a>
+        <a class="nav-link" href="budget.html">月度花销</a>
+        <a class="nav-link active" href="expenses.html">消费记录</a>
+        <a class="nav-link" href="moments.html">回顾时刻</a>
+      </div>
+    </nav>
 
+    <header class="page-header page-header--compact glass-panel" data-motion-stage style="--motion-order: 0;">
       <div class="hero hero--compact">
         <div class="hero-copy" data-hover-pop>
           <p class="eyebrow">Expense tracker</p>
           <h1 class="hero-title">打开就能继续记今天花了多少。</h1>
           <p class="hero-description">
-            这个页面只负责真实消费记录，不再重复月度预估。
-            你记完一笔之后，今天、本周、本月、本年的统计会自动更新。
+            这页只负责真实消费记录。先看自动统计，再直接记一笔、分析分类、按月复盘每天花了多少。
           </p>
           <div class="hero-stats">
             <div class="stat-card">
@@ -40,160 +45,202 @@
               <div class="stat-label" id="heroAverageLabel">本月日均消费</div>
             </div>
           </div>
+          <div id="stats" class="overview-kpis" aria-label="自动统计">
+            <div class="kpi-card" data-hover-pop>
+              <span class="kpi-label">今日</span>
+              <strong class="kpi-value" id="kpiDayTotal">¥0.00</strong>
+            </div>
+            <div class="kpi-card" data-hover-pop>
+              <span class="kpi-label">本周</span>
+              <strong class="kpi-value" id="kpiWeekTotal">¥0.00</strong>
+            </div>
+            <div class="kpi-card" data-hover-pop>
+              <span class="kpi-label">本月</span>
+              <strong class="kpi-value" id="kpiMonthTotal">¥0.00</strong>
+            </div>
+            <div class="kpi-card" data-hover-pop>
+              <span class="kpi-label">本年</span>
+              <strong class="kpi-value" id="kpiYearTotal">¥0.00</strong>
+            </div>
+          </div>
         </div>
       </div>
     </header>
 
-    <main class="page-content">
-      <section class="section-card glass-panel quick-entry-section" data-motion-stage style="--motion-order: 1;">
-        <form id="expenseForm" data-hover-pop>
+    <main class="page-content expense-dashboard">
+      <nav class="section-jump-nav section-jump-nav--compact glass-panel" aria-label="消费记录快捷跳转">
+        <a class="jump-link" href="#stats"><span>概览</span><strong>自动统计</strong></a>
+        <a class="jump-link" href="#quick-entry"><span>录入</span><strong>记一笔</strong></a>
+        <a class="jump-link" href="#range"><span>分析</span><strong>看构成</strong></a>
+        <a class="jump-link" href="expense-visual.html"><span>导出</span><strong>剪影账本</strong></a>
+        <a class="jump-link" href="#records"><span>复盘</span><strong>月度记录</strong></a>
+      </nav>
+
+      <div class="expense-workspace">
+        <section id="quick-entry" class="section-card glass-panel quick-entry-section expense-entry-panel" data-motion-stage style="--motion-order: 1;">
           <div class="section-head">
             <div>
               <h2>快速记一笔</h2>
-              <p>先把今天这笔记下来。编辑已有记录时，表单会自动切换到编辑状态。</p>
+              <p>金额、日期、分类和备注放在一起；编辑记录时会自动回填到这里。</p>
             </div>
           </div>
-          <input id="expenseEditingId" type="hidden" />
-          <div class="form-grid">
-            <div class="field">
-              <label for="expenseAmountInput">金额</label>
-              <input id="expenseAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：18.50" />
-            </div>
-            <div class="field">
-              <label for="expenseDateInput">日期</label>
-              <input id="expenseDateInput" type="date" />
-            </div>
-            <div class="field full">
-              <label for="expenseCategoryInput">分类</label>
-              <select id="expenseCategoryInput"></select>
-            </div>
-            <div class="field full">
-              <label for="expenseNoteInput">备注</label>
-              <textarea id="expenseNoteInput" placeholder="例如：早餐、地铁、奶茶、聚餐"></textarea>
-            </div>
-          </div>
-          <div class="form-actions">
-            <button class="btn-primary" type="submit" id="expenseSubmitLabel">保存消费</button>
-            <button class="btn-ghost" type="button" id="cancelExpenseEdit" hidden>取消编辑</button>
-            <span class="status-note" id="expenseFormStatus"></span>
-          </div>
-        </form>
-      </section>
 
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 2;">
-        <div class="section-head">
-          <div>
-            <h2>自动统计</h2>
-            <p>始终固定展示今天、本周、本月、本年的消费总额。</p>
-          </div>
-        </div>
-        <div class="kpi-grid">
-          <div class="kpi-card" data-hover-pop>
-            <span class="kpi-label">今日消费</span>
-            <strong class="kpi-value" id="kpiDayTotal">¥0.00</strong>
-          </div>
-          <div class="kpi-card" data-hover-pop>
-            <span class="kpi-label">本周消费</span>
-            <strong class="kpi-value" id="kpiWeekTotal">¥0.00</strong>
-          </div>
-          <div class="kpi-card" data-hover-pop>
-            <span class="kpi-label">本月消费</span>
-            <strong class="kpi-value" id="kpiMonthTotal">¥0.00</strong>
-          </div>
-          <div class="kpi-card" data-hover-pop>
-            <span class="kpi-label">本年消费</span>
-            <strong class="kpi-value" id="kpiYearTotal">¥0.00</strong>
-          </div>
-        </div>
-      </section>
-
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 3;">
-        <div class="section-head">
-          <div>
-            <h2>查看范围</h2>
-            <p>默认看本月，也可以切到今天、本周、本年。</p>
-          </div>
-        </div>
-        <div class="range-tabs" id="rangeTabs">
-          <button class="range-tab" type="button" data-range="day">今日</button>
-          <button class="range-tab" type="button" data-range="week">本周</button>
-          <button class="range-tab active" type="button" data-range="month">本月</button>
-          <button class="range-tab" type="button" data-range="year">本年</button>
-        </div>
-      </section>
-
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 4;">
-        <div class="section-head">
-          <div>
-            <h2>分类分析</h2>
-            <p id="categorySummaryLabel">当前范围内各分类的消费构成和占比。</p>
-          </div>
-        </div>
-        <div class="category-layout">
-          <div class="category-chart-panel" id="categoryChartPanel">
-            <div class="donut-chart donut-large" id="categoryDonutChart">
-              <div class="donut-inner">
-                <strong id="categoryChartTotal">¥0.00</strong>
-                <span id="categoryChartLabel">本月总消费</span>
+          <form id="expenseForm" data-hover-pop>
+            <input id="expenseEditingId" type="hidden" />
+            <div class="form-grid">
+              <div class="field">
+                <label for="expenseAmountInput">金额</label>
+                <input id="expenseAmountInput" type="number" step="0.01" min="0.01" placeholder="例如：18.50" />
+              </div>
+              <div class="field">
+                <label for="expenseDateInput">日期</label>
+                <input id="expenseDateInput" type="date" />
+              </div>
+              <div class="field full">
+                <label for="expenseCategoryInput">分类</label>
+                <select id="expenseCategoryInput"></select>
+              </div>
+              <div class="field full">
+                <label for="expenseNoteInput">备注</label>
+                <textarea id="expenseNoteInput" placeholder="例如：早餐、地铁、奶茶、聚餐"></textarea>
               </div>
             </div>
-            <div class="chart-caption" id="categoryChartCaption">暂无消费记录</div>
-          </div>
-          <div class="category-legend" id="categoryLegend"></div>
-        </div>
-      </section>
+            <div class="form-actions">
+              <button class="btn-primary" type="submit" id="expenseSubmitLabel">保存消费</button>
+              <button class="btn-ghost" type="button" id="cancelExpenseEdit" hidden>取消编辑</button>
+              <span class="status-note" id="expenseFormStatus"></span>
+            </div>
+          </form>
 
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 5;">
-        <div class="section-head">
+          <details id="category-manager" class="category-inline-manager">
+            <summary>
+              <span>
+                <strong>新增分类</strong>
+                <small>内置分类会保留，只在这里追加你自己的分类。</small>
+              </span>
+              <span class="category-inline-toggle">展开</span>
+            </summary>
+            <form id="categoryForm" data-hover-pop>
+              <div class="form-grid category-form-grid">
+                <div class="field">
+                  <label for="categoryNameInput">分类名称</label>
+                  <input id="categoryNameInput" type="text" placeholder="例如：宠物、旅行、礼物" />
+                </div>
+                <div class="field">
+                  <label for="categoryIconInput">图标</label>
+                  <input id="categoryIconInput" type="text" maxlength="4" placeholder="例如：🎁" />
+                </div>
+                <div class="field">
+                  <label for="categoryColorInput">分类颜色</label>
+                  <input id="categoryColorInput" type="color" value="#60a5fa" />
+                </div>
+              </div>
+              <div class="form-actions compact-actions">
+                <button class="btn-secondary" type="submit">添加分类</button>
+                <span class="status-note" id="categoryFormStatus"></span>
+              </div>
+            </form>
+          </details>
+        </section>
+
+        <section id="range" class="section-card glass-panel expense-analysis-panel" data-motion-stage style="--motion-order: 2;">
+          <div class="analysis-header">
+            <div class="section-head">
+              <div>
+                <h2>消费分析</h2>
+                <p>切换范围后，分类构成和趋势会一起更新。</p>
+              </div>
+            </div>
+            <div class="range-tabs" id="rangeTabs" aria-label="查看范围">
+              <button class="range-tab" type="button" data-range="day">今日</button>
+              <button class="range-tab" type="button" data-range="week">本周</button>
+              <button class="range-tab active" type="button" data-range="month">本月</button>
+              <button class="range-tab" type="button" data-range="year">本年</button>
+            </div>
+          </div>
+
+          <div id="category-analysis" class="analysis-body">
+            <div class="category-chart-panel" id="categoryChartPanel">
+              <div class="donut-chart donut-large" id="categoryDonutChart">
+                <div class="donut-inner">
+                  <strong id="categoryChartTotal">¥0.00</strong>
+                  <span id="categoryChartLabel">本月总消费</span>
+                </div>
+              </div>
+              <div class="chart-caption" id="categoryChartCaption">暂无消费记录</div>
+            </div>
+            <div class="analysis-list-panel">
+              <div class="mini-section-head">
+                <h3>分类构成</h3>
+                <p id="categorySummaryLabel">当前范围内各分类的消费构成和占比。</p>
+              </div>
+              <div class="category-legend" id="categoryLegend"></div>
+            </div>
+          </div>
+
+          <div id="trend" class="analysis-trend">
+            <div class="mini-section-head">
+              <h3>趋势图</h3>
+              <p id="trendRangeLabel">当前查看：本月消费趋势</p>
+            </div>
+            <div class="trend-chart-shell" id="trendChartShell"></div>
+          </div>
+        </section>
+      </div>
+
+      <section id="records" class="section-card glass-panel records-panel" data-motion-stage style="--motion-order: 3;">
+        <div class="records-head">
           <div>
-            <h2>趋势图</h2>
-            <p id="trendRangeLabel">当前查看：本月消费趋势</p>
+            <h2>月度记录</h2>
+            <p id="recordsSummaryLabel">当前月份共 0 笔记录。</p>
+          </div>
+          <div class="records-month-controls" aria-label="月份切换">
+            <button class="btn-ghost btn-small" type="button" id="recordsPrevMonth">上月</button>
+            <input id="recordsMonthInput" type="month" aria-label="选择月份" />
+            <button class="btn-ghost btn-small" type="button" id="recordsNextMonth">下月</button>
           </div>
         </div>
-        <div class="trend-chart-shell" id="trendChartShell"></div>
-      </section>
 
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 6;">
-        <form id="categoryForm" data-hover-pop>
-          <div class="section-head">
-            <div>
-              <h2>新增分类</h2>
-              <p>内置常用分类会保留，这里只追加你自己的分类。</p>
-            </div>
+        <div class="records-month-stats">
+          <div class="month-stat">
+            <span>当月总消费</span>
+            <strong id="recordsMonthTotal">¥0.00</strong>
           </div>
-          <div class="form-grid">
-            <div class="field">
-              <label for="categoryNameInput">分类名称</label>
-              <input id="categoryNameInput" type="text" placeholder="例如：宠物、旅行、礼物" />
-            </div>
-            <div class="field">
-              <label for="categoryIconInput">图标</label>
-              <input id="categoryIconInput" type="text" maxlength="4" placeholder="例如：🎁" />
-            </div>
-            <div class="field full">
-              <label for="categoryColorInput">分类颜色</label>
-              <input id="categoryColorInput" type="color" value="#60a5fa" />
-            </div>
+          <div class="month-stat">
+            <span>记录数</span>
+            <strong id="recordsMonthCount">0</strong>
           </div>
-          <div class="form-actions">
-            <button class="btn-secondary" type="submit">添加分类</button>
-            <span class="status-note" id="categoryFormStatus"></span>
-          </div>
-        </form>
-      </section>
-
-      <section class="section-card glass-panel" data-motion-stage style="--motion-order: 7;">
-        <div class="section-head">
-          <div>
-            <h2>记录列表</h2>
-            <p id="recordsSummaryLabel">当前范围内共 0 笔记录。</p>
+          <div class="month-stat">
+            <span>消费天数</span>
+            <strong id="recordsActiveDays">0</strong>
           </div>
         </div>
-        <div class="records-list" id="recordsList"></div>
+
+        <div class="records-month-layout">
+          <div class="records-calendar-panel">
+            <div class="calendar-weekdays" aria-hidden="true">
+              <span>一</span>
+              <span>二</span>
+              <span>三</span>
+              <span>四</span>
+              <span>五</span>
+              <span>六</span>
+              <span>日</span>
+            </div>
+            <div class="records-month-grid" id="recordsMonthGrid"></div>
+          </div>
+          <aside class="records-day-detail" id="recordsDayDetail" aria-live="polite">
+            <div class="mini-section-head">
+              <h3 id="recordsDayTitle">选择一天查看明细</h3>
+              <p id="recordsDaySummary">点击左侧日期方块后，这里会显示当天的具体记录。</p>
+            </div>
+            <div class="records-list records-day-list" id="recordsList"></div>
+          </aside>
+        </div>
       </section>
 
-      <p class="footer-note" data-motion-stage style="--motion-order: 8;">
-        消费记录使用浏览器本地存储保存。如果你清空浏览器缓存或换设备，数据不会自动同步。
+      <p class="footer-note" data-motion-stage style="--motion-order: 4;">
+        消费记录使用浏览器本地存储保存。如果你清空浏览器缓存或更换设备，数据不会自动同步。
       </p>
     </main>
   </div>
