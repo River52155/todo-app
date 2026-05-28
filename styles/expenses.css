@@ -2068,3 +2068,108 @@ button {
     max-height: none;
   }
 }
+
+/* River Spatial polish */
+.page-header.glass-panel {
+  border-radius: 22px;
+  padding: clamp(16px, 2vw, 22px);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.025)),
+    rgba(18, 22, 34, 0.46);
+}
+
+.hero-copy {
+  gap: 10px;
+  padding: clamp(18px, 2vw, 22px);
+}
+
+.hero-title {
+  max-width: 16ch;
+  font-size: clamp(1.85rem, 3.2vw, 2.65rem);
+}
+
+.hero-description {
+  max-width: 58ch;
+  color: rgba(226, 236, 255, 0.78);
+}
+
+.hero-stats .kpi-card,
+.range-summary-card,
+.section-card {
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.065), rgba(255, 255, 255, 0.02)),
+    rgba(12, 16, 28, 0.46);
+}
+
+@media (max-width: 720px) {
+  .shell {
+    padding: 10px 10px 24px;
+  }
+
+  .page-header.glass-panel {
+    margin-bottom: 14px;
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .hero {
+    gap: 12px;
+  }
+
+  .hero-copy {
+    padding: 15px;
+    border-radius: 16px;
+  }
+
+  .eyebrow {
+    font-size: 11px;
+  }
+
+  .hero-title {
+    max-width: none;
+    font-size: clamp(1.45rem, 8vw, 2rem);
+    line-height: 1.08;
+  }
+
+  .hero-description {
+    font-size: 0.94rem;
+    line-height: 1.55;
+  }
+
+  .hero-stats .kpi-card,
+  .overview-kpis .kpi-card {
+    min-height: 82px;
+    padding: 14px;
+  }
+
+  .section-card {
+    padding: 14px;
+    border-radius: 18px;
+  }
+
+  .section-jump-nav--compact {
+    margin-inline: -2px;
+    overflow-x: auto;
+  }
+
+  .jump-link,
+  .section-jump-nav--compact .jump-link {
+    flex-basis: 124px;
+    min-height: 62px;
+  }
+
+  .form-actions,
+  .record-actions,
+  .forecast-item-actions,
+  .forecast-template-actions {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .form-actions button,
+  .record-actions button,
+  .forecast-item-actions button,
+  .forecast-template-actions button {
+    min-height: 42px;
+  }
+}

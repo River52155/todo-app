@@ -6,6 +6,44 @@ const PageMotion = (() => {
   const swapStates = new WeakMap();
   const visibilityStates = new WeakMap();
   const removalStates = new Map();
+  const prefetchedPages = new Set();
+  const navPrefetchSelector = ".site-top-nav a[href], .page-nav a[href]";
+  const stageSelector = [
+    ".site-top-nav",
+    "header",
+    "[role='banner']",
+    "main",
+    ".page-header",
+    ".freedom-core",
+    ".freedom-stage",
+    ".freedom-panel",
+    ".cosmos-stage",
+    ".poster-hero",
+    ".poster-panel"
+  ].join(", ");
+  const itemSelector = [
+    ".hero-copy",
+    ".hero-visual",
+    ".kpi-card",
+    ".stat-card",
+    ".section-card",
+    ".record-item",
+    ".task-column",
+    ".task-card",
+    ".input-section",
+    ".glass-panel",
+    ".budget-card",
+    ".freedom-metric",
+    ".freedom-mini-form",
+    ".freedom-days-card",
+    ".goal-card",
+    ".goal-panel",
+    ".lane-card",
+    ".moment-card",
+    ".poster-panel",
+    ".insight-card",
+    "form"
+  ].join(", ");
   let removalLayer = null;
   let fallbackStack = null;
   let reconciliationFrame = 0;
@@ -14,7 +52,11 @@ const PageMotion = (() => {
     document.documentElement.classList.add("motion-enabled");
     syncMotionPreference();
     bindPageLinks();
+    bindNavigationPrefetch();
     bindHoverPops();
+    preloadSharedAssets();
+    scheduleNavigationPrefetch();
+    prepareLayeredEntrance();
     preparePageEntrance();
 
     reduceMotionQuery.addEventListener?.("change", syncMotionPreference);
@@ -27,6 +69,7 @@ const PageMotion = (() => {
 
   function restorePageState() {
     document.body?.classList.remove("page-leaving");
+    document.body?.classList.remove("page-leaving--top-nav");
     document.body?.classList.add("page-ready");
   }
 
@@ -38,14 +81,64 @@ const PageMotion = (() => {
     });
   }
 
+  function prepareLayeredEntrance() {
+    if (reduceMotionQuery.matches || !document.body) return;
+
+    let stageOrder = 0;
+    const seenStages = new Set();
+
+    document.querySelectorAll(stageSelector).forEach(stage => {
+      if (!stage || seenStages.has(stage) || stage.closest("[hidden]")) return;
+
+      seenStages.add(stage);
+      markMotionStage(stage, stageOrder++);
+      markMotionItems(stage);
+    });
+  }
+
+  function markMotionStage(element, order) {
+    if (!element.hasAttribute("data-motion-stage")) {
+      element.setAttribute("data-motion-stage", "");
+    }
+    element.style.setProperty("--motion-order", String(Math.min(order, 8)));
+  }
+
+  function markMotionItems(container) {
+    let itemOrder = 0;
+    const maxItems = 34;
+
+    container.querySelectorAll(itemSelector).forEach(item => {
+      if (itemOrder >= maxItems) return;
+      if (item === container || item.closest("[hidden]")) return;
+      if (item.closest("[data-motion-item]")) return;
+      if (item.closest(".site-top-nav")) return;
+
+      item.setAttribute("data-motion-item", "");
+      item.style.setProperty("--motion-item-order", String(itemOrder++));
+    });
+  }
+
   function bindPageLinks() {
     document.addEventListener("click", event => {
       const link = event.target.closest("a[href]");
       if (!link || !shouldHandleLink(event, link)) return;
 
       event.preventDefault();
-      navigateWithTransition(link.href);
+      navigateWithTransition(link.href, {
+        isTopNavigation: Boolean(link.closest(".page-nav, .site-top-nav"))
+      });
     });
+  }
+
+  function bindNavigationPrefetch() {
+    const prefetchFromEvent = event => {
+      const link = event.target.closest?.(navPrefetchSelector);
+      if (link) prefetchPage(link.href);
+    };
+
+    document.addEventListener("pointerover", prefetchFromEvent, { passive: true });
+    document.addEventListener("focusin", prefetchFromEvent);
+    document.addEventListener("touchstart", prefetchFromEvent, { passive: true });
   }
 
   function shouldHandleLink(event, link) {
@@ -54,8 +147,6 @@ const PageMotion = (() => {
     if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
     if (link.target && link.target !== "_self") return false;
     if (link.hasAttribute("download")) return false;
-    if (link.closest(".page-nav, .site-top-nav")) return false;
-
     const href = link.getAttribute("href");
     if (!href || href.startsWith("#")) return false;
     if (href.startsWith("javascript:") || href.startsWith("mailto:") || href.startsWith("tel:")) return false;
@@ -68,6 +159,59 @@ const PageMotion = (() => {
     if (isSameDocumentRoute(currentUrl, targetUrl)) return false;
     if (!isSameFolder(currentUrl, targetUrl)) return false;
     if (!targetUrl.pathname.toLowerCase().endsWith(".html")) return false;
+
+    return true;
+  }
+
+  function preloadSharedAssets() {
+    const image = new Image();
+    image.decoding = "async";
+    image.src = "assets/bg.png";
+  }
+
+  function scheduleNavigationPrefetch() {
+    const run = () => {
+      document.querySelectorAll(navPrefetchSelector).forEach(link => prefetchPage(link.href));
+    };
+
+    if ("requestIdleCallback" in window) {
+      window.requestIdleCallback(run, { timeout: 1600 });
+      return;
+    }
+
+    window.setTimeout(run, 700);
+  }
+
+  function prefetchPage(href) {
+    let targetUrl;
+
+    try {
+      targetUrl = new URL(href, window.location.href);
+    } catch {
+      return;
+    }
+
+    if (!shouldPrefetchUrl(targetUrl)) return;
+
+    const cacheKey = targetUrl.origin + targetUrl.pathname + targetUrl.search;
+    if (prefetchedPages.has(cacheKey)) return;
+    prefetchedPages.add(cacheKey);
+
+    const link = document.createElement("link");
+    link.rel = "prefetch";
+    link.as = "document";
+    link.href = targetUrl.href;
+    document.head.appendChild(link);
+  }
+
+  function shouldPrefetchUrl(targetUrl) {
+    const currentUrl = new URL(window.location.href);
+
+    if (!isSameFolder(currentUrl, targetUrl)) return false;
+    if (!targetUrl.pathname.toLowerCase().endsWith(".html")) return false;
+    if (targetUrl.origin + targetUrl.pathname + targetUrl.search === currentUrl.origin + currentUrl.pathname + currentUrl.search) {
+      return false;
+    }
 
     return true;
   }
@@ -93,18 +237,19 @@ const PageMotion = (() => {
     return currentUrl.origin === targetUrl.origin && currentFolder === targetFolder;
   }
 
-  function navigateWithTransition(href) {
+  function navigateWithTransition(href, options = {}) {
     if (!document.body || reduceMotionQuery.matches) {
       window.location.href = href;
       return;
     }
 
     document.body.classList.remove("page-ready");
+    document.body.classList.toggle("page-leaving--top-nav", Boolean(options.isTopNavigation));
     document.body.classList.add("page-leaving");
 
     window.setTimeout(() => {
       window.location.href = href;
-    }, 220);
+    }, options.isTopNavigation ? 90 : 180);
   }
 
   function animateSwap(element, render, options = {}) {

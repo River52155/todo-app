@@ -1,8 +1,13 @@
 ﻿:root {
   --motion-fast: 190ms;
-  --motion-base: 280ms;
+  --motion-base: 220ms;
+  --motion-page-leave: 140ms;
+  --motion-top-nav-leave: 90ms;
   --motion-slow: 380ms;
+  --motion-stage-pop: 420ms;
+  --motion-item-pop: 320ms;
   --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-pop: cubic-bezier(0.18, 0.92, 0.22, 1);
   --motion-shift-sm: 10px;
   --motion-shift-md: 18px;
   --hover-pop-ms: 460ms;
@@ -13,31 +18,51 @@
 
 html.motion-enabled body {
   transition:
-    opacity var(--motion-base) var(--motion-ease),
-    transform var(--motion-base) var(--motion-ease),
-    filter var(--motion-base) var(--motion-ease);
+    opacity var(--motion-page-leave) var(--motion-ease),
+    transform var(--motion-page-leave) var(--motion-ease),
+    filter var(--motion-page-leave) var(--motion-ease);
 }
 
 html.motion-enabled body.page-leaving {
-  opacity: 0;
-  transform: translateY(var(--motion-shift-sm));
+  opacity: 0.72;
+  transform: translateY(6px);
   filter: saturate(0.98);
+}
+
+html.motion-enabled body.page-leaving--top-nav {
+  transition-duration: var(--motion-top-nav-leave);
+  opacity: 0.86;
+  transform: translateY(3px);
 }
 
 html.motion-enabled [data-motion-stage],
 html.motion-enabled [data-motion-item] {
   will-change: opacity, transform;
   backface-visibility: hidden;
+  transform-style: preserve-3d;
+}
+
+html.motion-enabled body:not(.page-ready) [data-motion-stage],
+html.motion-enabled body:not(.page-ready) [data-motion-item] {
+  opacity: 0;
+}
+
+html.motion-enabled body:not(.page-ready) [data-motion-stage] {
+  transform: translate3d(0, -14px, 0) scale(0.992);
+}
+
+html.motion-enabled body:not(.page-ready) [data-motion-item] {
+  transform: translate3d(0, -10px, 0) scale(0.988);
 }
 
 html.motion-enabled body.page-ready [data-motion-stage] {
-  animation: motion-stage-in var(--motion-slow) var(--motion-ease) both;
-  animation-delay: calc(var(--motion-order, 0) * 72ms);
+  animation: motion-stage-in var(--motion-stage-pop) var(--motion-ease-pop) both;
+  animation-delay: calc(var(--motion-order, 0) * 58ms);
 }
 
 html.motion-enabled body.page-ready [data-motion-item] {
-  animation: motion-item-in var(--motion-base) var(--motion-ease) both;
-  animation-delay: calc(150ms + (var(--motion-item-order, 0) * 46ms));
+  animation: motion-item-in var(--motion-item-pop) var(--motion-ease-pop) both;
+  animation-delay: calc(90ms + (var(--motion-item-order, 0) * 34ms));
 }
 
 html.motion-enabled .motion-swap,
@@ -92,22 +117,32 @@ html.motion-enabled .motion-section[hidden] {
 @keyframes motion-stage-in {
   from {
     opacity: 0;
-    transform: translateY(var(--motion-shift-md));
+    transform: translate3d(0, -16px, 0) scale(0.992);
+    filter: saturate(0.96) brightness(0.98);
+  }
+  62% {
+    opacity: 1;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
   }
 }
 
 @keyframes motion-item-in {
   from {
     opacity: 0;
-    transform: translateY(14px);
+    transform: translate3d(0, -12px, 0) scale(0.985);
+    filter: saturate(0.96) brightness(0.98);
+  }
+  70% {
+    opacity: 1;
   }
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: none;
   }
 }
 
@@ -143,6 +178,23 @@ html.motion-enabled .motion-section[hidden] {
     transform: translate3d(0, var(--hover-rest-lift), 0);
     box-shadow: var(--hover-pop-shadow);
     filter: brightness(1.015) saturate(1.02);
+  }
+}
+
+@media (max-width: 760px) {
+  :root {
+    --motion-stage-pop: 300ms;
+    --motion-item-pop: 240ms;
+    --motion-shift-sm: 6px;
+    --motion-shift-md: 10px;
+  }
+
+  html.motion-enabled body.page-ready [data-motion-stage] {
+    animation-delay: calc(var(--motion-order, 0) * 34ms);
+  }
+
+  html.motion-enabled body.page-ready [data-motion-item] {
+    animation-delay: calc(56ms + (var(--motion-item-order, 0) * 22ms));
   }
 }
 
@@ -399,4 +451,16 @@ html.motion-enabled .motion-fallback-undo {
   html.motion-enabled [data-hover-pop].is-hover-popping {
     box-shadow: none !important;
   }
+}
+
+html.motion-reduce body,
+html.motion-reduce [data-motion-stage],
+html.motion-reduce [data-motion-item],
+html.motion-reduce .motion-swap,
+html.motion-reduce .motion-section {
+  animation: none !important;
+  transition: none !important;
+  opacity: 1 !important;
+  transform: none !important;
+  filter: none !important;
 }

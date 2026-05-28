@@ -34,6 +34,7 @@ test('h5 pages use the shared top navigation outside the hero header', () => {
     assert.notEqual(firstContentIndex, -1, `${page} should have a main content entry`);
     assert.equal(topNavIndex < firstContentIndex, true, `${page} navigation should sit before the first content entry`);
     assert.equal(html.includes('styles/page-nav.css'), true, `${page} should load shared nav styles`);
+    assert.equal(html.includes('rel="preload" as="image" href="assets/bg.png"'), true, `${page} should preload the shared background image`);
     assert.equal(html.includes('<nav class="page-nav"'), false, `${page} should not keep the old embedded page nav`);
     assert.match(html, new RegExp(`<a class="nav-link active"[^>]*>${activeLabel}</a>`), `${page} should mark the right page active`);
   });
@@ -319,11 +320,26 @@ test('freedom page turns idle funds into freedom-day blocks', () => {
   assert.equal(css.includes('@media (max-width: 760px)'), true);
 });
 
-test('page motion leaves top-level page navigation immediate', () => {
+test('page motion smooths and prefetches top-level page navigation', () => {
   const motion = readFile('scripts/motion.js');
+  const css = readFile('styles/motion.css');
+  const navCss = readFile('styles/page-nav.css');
 
-  assert.equal(motion.includes('link.closest(".page-nav, .site-top-nav")'), true);
-  assert.equal(motion.includes('function navigateWithTransition(href)'), true);
+  assert.equal(motion.includes('function navigateWithTransition(href, options = {})'), true);
+  assert.equal(motion.includes('bindNavigationPrefetch'), true);
+  assert.equal(motion.includes('scheduleNavigationPrefetch'), true);
+  assert.equal(motion.includes('prepareLayeredEntrance'), true);
+  assert.equal(motion.includes('markMotionItems'), true);
+  assert.equal(motion.includes('link.rel = "prefetch"'), true);
+  assert.equal(motion.includes('isTopNavigation'), true);
+  assert.equal(css.includes('--motion-top-nav-leave: 90ms;'), true);
+  assert.equal(css.includes('--motion-stage-pop: 420ms;'), true);
+  assert.equal(css.includes('body:not(.page-ready) [data-motion-stage]'), true);
+  assert.equal(css.includes('translate3d(0, -16px, 0) scale(0.992)'), true);
+  assert.equal(css.includes('html.motion-reduce body'), true);
+  assert.equal(navCss.includes('--river-surface'), true);
+  assert.equal(navCss.includes('--river-blue'), true);
+  assert.equal(navCss.includes('body:not(.bass-ledger-page):not(.river-star-page) :where(input, textarea, select):focus'), true);
 });
 
 test('moments page presents records as a single immersive planet cosmos', () => {
