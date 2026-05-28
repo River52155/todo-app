@@ -539,6 +539,19 @@ test('index page provides a search bar that filters tasks and history', () => {
   assert.equal(html.includes('.filter(matchesCurrentSearch)'), true);
 });
 
+test('index page keeps mobile task additions light', () => {
+  const html = readFile('index.html');
+
+  assert.equal(html.includes('const mobileTaskMotionQuery = window.matchMedia("(max-width: 720px)");'), true);
+  assert.equal(html.includes('function isMobileTaskView()'), true);
+  assert.equal(html.includes('addedTaskId: task.id'), true);
+  assert.equal(html.includes('mobileFast: isMobileTaskView()'), true);
+  assert.equal(html.includes('task-render-static'), true);
+  assert.equal(html.includes('task-just-added'), true);
+  assert.equal(html.includes('@keyframes taskAddMobile'), true);
+  assert.equal(html.includes('backdrop-filter: none;'), true);
+});
+
 test('index page loads tasks defensively from local storage', () => {
   const html = readFile('index.html');
 

@@ -802,6 +802,53 @@
     .task-card.priority-medium { border-left-color: #f6ad55; }
     .task-card.priority-low { border-left-color: #68d391; }
 
+    @keyframes taskAddMobile {
+      from {
+        opacity: 0;
+        transform: translate3d(0, -6px, 0) scale(0.992);
+      }
+      to {
+        opacity: 1;
+        transform: translate3d(0, 0, 0) scale(1);
+      }
+    }
+
+    @media (max-width: 720px) {
+      .task-list,
+      .task-card {
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+
+      .task-list {
+        background: rgba(18, 24, 39, 0.58);
+      }
+
+      .task-card {
+        background: rgba(26, 32, 48, 0.82);
+        transition: background-color 120ms ease, border-color 120ms ease, opacity 120ms ease;
+        will-change: auto;
+      }
+
+      .task-item {
+        animation-duration: 1ms;
+      }
+
+      .task-item.task-render-static {
+        animation: none;
+      }
+
+      .task-item.task-just-added {
+        animation: taskAddMobile 120ms ease-out both;
+      }
+
+      .task-dot,
+      .checkbox,
+      .btn-delete {
+        transition-duration: 120ms;
+      }
+    }
+
     .task-header {
       display: flex;
       align-items: flex-start;
@@ -1175,6 +1222,7 @@
     const TASKS_STORAGE_KEY = "tasks";
     const TASK_TYPES = ["daily", "weekly", "monthly", "halfYear"];
     const PRIORITIES = ["high", "medium", "low"];
+    const mobileTaskMotionQuery = window.matchMedia("(max-width: 720px)");
 
     let tasks = loadTasks();
     let currentFilter = "all";
@@ -1204,6 +1252,10 @@
     document.getElementById("dateInput").valueAsDate = new Date();
     initializeMotionState();
     initializeHeroRotation();
+
+    function isMobileTaskView() {
+      return mobileTaskMotionQuery.matches;
+    }
 
     function initializeMotionState() {
       [uiSections.input, uiSections.stats, uiSections.filters, uiSections.search].forEach(section => {
@@ -1488,7 +1540,10 @@
 
       tasks.push(task);
       saveTasks();
-      renderTasks();
+      renderTasks({
+        addedTaskId: task.id,
+        mobileFast: isMobileTaskView()
+      });
 
       taskInput.value = "";
       timeInput.value = "";
@@ -1759,7 +1814,7 @@
       return icons[period];
     }
 
-    function renderTasks() {
+    function renderTasks(options = {}) {
       const taskGrid = document.getElementById("taskGrid");
       taskGrid.classList.remove("history-mode");
 
@@ -1771,13 +1826,13 @@
       const dailyTasks = filteredTasks.filter(task => task.taskType === "daily" || !task.taskType);
       const monthlyTasks = filteredTasks.filter(task => task.taskType === "monthly" || task.taskType === "halfYear");
 
-      renderTaskColumn("weeklyList", weeklyTasks);
-      renderTaskColumn("taskList", dailyTasks);
-      renderTaskColumn("monthlyList", monthlyTasks);
+      renderTaskColumn("weeklyList", weeklyTasks, options);
+      renderTaskColumn("taskList", dailyTasks, options);
+      renderTaskColumn("monthlyList", monthlyTasks, options);
       window.PageMotion?.reconcilePendingRemovals?.();
     }
 
-    function renderTaskColumn(listId, columnTasks) {
+    function renderTaskColumn(listId, columnTasks, options = {}) {
       const taskList = document.getElementById(listId);
       if (!taskList) return;
 
@@ -1843,7 +1898,7 @@
           `;
 
           for (const task of periodGroups[period]) {
-            html += renderTaskItem(task);
+            html += renderTaskItem(task, options);
           }
 
           html += `</div>`;
@@ -1911,8 +1966,11 @@
       window.PageMotion?.reconcilePendingRemovals?.();
     }
 
-    function renderTaskItem(task) {
+    function renderTaskItem(task, options = {}) {
       const priorityClass = `priority-${task.priority || "medium"}`;
+      const renderMotionClass = options.mobileFast
+        ? (task.id === options.addedTaskId ? "task-just-added" : "task-render-static")
+        : "";
       const priorityBadgeMap = {
         high: "🔴 高",
         medium: "🟡 中",
@@ -1938,7 +1996,7 @@
       }
 
       return `
-        <div class="task-item ${task.completed ? "completed" : ""} ${isLongTerm ? `long-term ${typeClass}` : ""}" data-task-id="${task.id}">
+        <div class="task-item ${task.completed ? "completed" : ""} ${isLongTerm ? `long-term ${typeClass}` : ""} ${renderMotionClass}" data-task-id="${task.id}">
           <div class="task-time">${task.time || (isLongTerm ? "长期" : "全天")}</div>
           <div class="task-dot"></div>
           <div class="task-card ${priorityClass}">
