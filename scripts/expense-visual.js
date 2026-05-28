@@ -2,6 +2,31 @@ const ExpenseVisualApp = (() => {
   const STORAGE_KEY = "expenseTracker:v1";
   const FALLBACK_CATEGORY_ID = "other";
   const POSTER_COLORS = ["#c93922", "#11100d", "#1f5b7a", "#e7b638", "#8c2f1b", "#284d2f"];
+  const ExpenseRoleApi = globalThis.ExpenseRole || {
+    LIFE_SUPPORT: "life_support",
+    LIFE_EXTRA: "life_extra",
+    normalizeExpenseRole: (value, categoryId) => value === "life_support" || value === "life_extra" ? value : (["food", "transport", "daily", "medical", "housing"].includes(categoryId) ? "life_support" : "life_extra"),
+    getRoleMeta: role => role === "life_support" ? { label: "基础生存", shortLabel: "必要" } : { label: "自由选择", shortLabel: "非必要" },
+    buildRoleBreakdown: records => {
+      const rows = [
+        { role: "life_support", label: "基础生存", shortLabel: "必要", total: 0, count: 0, percent: 0, totalText: "¥0.00", percentText: "0.0%" },
+        { role: "life_extra", label: "自由选择", shortLabel: "非必要", total: 0, count: 0, percent: 0, totalText: "¥0.00", percentText: "0.0%" }
+      ];
+      records.forEach(record => {
+        const role = record.expenseRole === "life_support" || record.expenseRole === "life_extra" ? record.expenseRole : (["food", "transport", "daily", "medical", "housing"].includes(record.categoryId) ? "life_support" : "life_extra");
+        const row = rows.find(item => item.role === role) || rows[1];
+        row.total = roundAmount(row.total + record.amount);
+        row.count += 1;
+      });
+      const total = roundAmount(rows.reduce((sum, row) => sum + row.total, 0));
+      rows.forEach(row => {
+        row.percent = total ? Math.round((row.total / total) * 1000) / 10 : 0;
+        row.totalText = formatCurrency(row.total);
+        row.percentText = `${row.percent.toFixed(1)}%`;
+      });
+      return { total, totalText: formatCurrency(total), rows };
+    }
+  };
   const BUILTIN_CATEGORIES = [
     { id: "food", name: "餐饮", color: "#fb7185", icon: "餐" },
     { id: "transport", name: "交通", color: "#38bdf8", icon: "行" },
@@ -68,6 +93,7 @@ const ExpenseVisualApp = (() => {
     const records = getFilteredRecords();
     const focusedRecords = getVisibleRecords(records);
     const breakdown = buildCategoryBreakdown(records, state.store.categories);
+    const roleBreakdown = ExpenseRoleApi.buildRoleBreakdown(records);
     const timeline = state.range === "month" ? buildDailyTimeline(records, state.month) : buildMonthlyTimeline(records);
     const total = roundAmount(records.reduce((sum, record) => sum + record.amount, 0));
     const activeDays = new Set(records.map(record => record.date)).size;
@@ -78,6 +104,7 @@ const ExpenseVisualApp = (() => {
     setText("visualTotalAmount", formatCurrency(total));
     setText("visualSummary", `${records.length} 笔记录 · ${activeDays} 个消费日`);
     renderInsights(insights);
+    renderRoleCuts(roleBreakdown);
     renderCategoryBlocks(breakdown);
     renderTimeline(timeline);
     renderLargestRecord(largest);
@@ -127,10 +154,32 @@ const ExpenseVisualApp = (() => {
       amount,
       date,
       categoryId: allowedCategories.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID,
+      expenseRole: ExpenseRoleApi.normalizeExpenseRole(record.expenseRole, allowedCategories.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID),
       note: toText(record.note),
       createdAt,
       updatedAt: normalizeDateTime(record.updatedAt) || createdAt
     };
+  }
+
+  function renderRoleCuts(breakdown) {
+    const container = document.getElementById("bassRoleCuts");
+    if (!container) return;
+    if (!breakdown.total) {
+      setText("bassRoleSummary", "还没有可拆开的消费记录。");
+      container.innerHTML = `<div class="empty-poster">记账后，这里会把必要和非必要消费切成两块。</div>`;
+      return;
+    }
+
+    const support = breakdown.rows.find(row => row.role === ExpenseRoleApi.LIFE_SUPPORT) || breakdown.rows[0];
+    const extra = breakdown.rows.find(row => row.role === ExpenseRoleApi.LIFE_EXTRA) || breakdown.rows[1];
+    setText("bassRoleSummary", `当前范围 ${breakdown.totalText}，基础生存 ${support.percentText}，自由选择 ${extra.percentText}。`);
+    container.innerHTML = breakdown.rows.map((row, index) => `
+      <article class="role-cut role-cut--${escapeAttribute(row.role)}" style="--weight:${Math.max(16, row.percent)}; --tilt:${index === 0 ? "-1.6deg" : "1.8deg"}">
+        <span>${escapeHtml(row.label)}</span>
+        <strong>${escapeHtml(row.totalText)}</strong>
+        <small>${escapeHtml(row.percentText)} · ${row.count} 笔</small>
+      </article>
+    `).join("");
   }
 
   function getFilteredRecords() {
@@ -253,10 +302,11 @@ const ExpenseVisualApp = (() => {
     }
     container.innerHTML = records.slice(0, 18).map(record => {
       const category = getCategoryById(record.categoryId);
+      const roleMeta = ExpenseRoleApi.getRoleMeta(record.expenseRole);
       return `
         <article class="record-strip">
           <span>${escapeHtml(record.date)}</span>
-          <span>${escapeHtml(category.name)}${record.note ? ` · ${escapeHtml(record.note)}` : ""}</span>
+          <span>${escapeHtml(category.name)} · ${escapeHtml(roleMeta.shortLabel || roleMeta.label)}${record.note ? ` · ${escapeHtml(record.note)}` : ""}</span>
           <strong>${formatCurrency(record.amount)}</strong>
         </article>
       `;
@@ -335,11 +385,13 @@ ${document.getElementById("expenseVisualApp")?.outerHTML || ""}
     const largest = records.slice().sort((a, b) => b.amount - a.amount)[0];
     const oneShotRatio = largest ? Math.round((largest.amount / total) * 1000) / 10 : 0;
     const focusName = state.focusedCategoryId ? getCategoryById(state.focusedCategoryId).name : "";
+    const roleBreakdown = ExpenseRoleApi.buildRoleBreakdown(records);
+    const extraRow = roleBreakdown.rows.find(row => row.role === ExpenseRoleApi.LIFE_EXTRA);
 
     return {
       lead: focusName
         ? `${focusName} 被单独拎出来了：${focusedRecords.length} 笔，共 ${formatCurrency(focusedTotal)}。`
-        : `这段时间一共花了 ${formatCurrency(total)}，最高块面是 ${top?.category.name || "暂无"}。`,
+        : `这段时间一共花了 ${formatCurrency(total)}，自由选择占 ${extraRow?.percentText || "0.0%"}。`,
       tempo: activeDays > 1
         ? `平均每个消费日 ${formatCurrency(dailyAverage)}，有 ${activeDays} 天留下记录。`
         : `记录集中在 1 天里，先继续记几天，别急着下判断。`,
@@ -385,10 +437,11 @@ ${document.getElementById("expenseVisualApp")?.outerHTML || ""}
   }
 
   function buildCsv(records) {
-    const rows = [["id", "date", "amount", "category", "note", "createdAt", "updatedAt"]];
+    const rows = [["id", "date", "amount", "category", "expenseRole", "expenseRoleLabel", "note", "createdAt", "updatedAt"]];
     records.forEach(record => {
       const category = getCategoryById(record.categoryId);
-      rows.push([record.id, record.date, record.amount, category.name, record.note, record.createdAt, record.updatedAt]);
+      const roleMeta = ExpenseRoleApi.getRoleMeta(record.expenseRole);
+      rows.push([record.id, record.date, record.amount, category.name, record.expenseRole, roleMeta.label, record.note, record.createdAt, record.updatedAt]);
     });
     return rows.map(row => row.map(escapeCsvCell).join(",")).join("\n");
   }
@@ -414,6 +467,9 @@ body { margin: 0; color: #11100d; background: #eadbbd; font-family: Arial, "Micr
 h1 { font-size: clamp(4rem, 11vw, 8rem); line-height: .82; letter-spacing: -.08em; margin: 0; }
 .paper-cut, .visual-controls, .bass-button { display: none !important; }
 .poster-grid, .insight-marquee { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+.role-cuts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.role-cut { border: 3px solid #11100d; background: #1f5b7a; color: #f3ead4; padding: 18px; }
+.role-cut--life_extra { background: #e7b638; color: #11100d; }
 .category-cuts, .record-strips { display: grid; gap: 10px; }
 .category-cut, .record-strip, .month-cut { border: 3px solid #11100d; background: #eadbbd; padding: 10px; color: #11100d; }
 .record-strip { display: grid; grid-template-columns: 120px 1fr auto; }

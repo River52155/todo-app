@@ -28,6 +28,7 @@
     'budgetMonths',
     'extras'
   ]);
+  const LIFE_SUPPORT_CATEGORY_IDS = new Set(['food', 'transport', 'daily', 'medical', 'housing']);
 
   function readStore(storage = getDefaultStorage()) {
     return normalizeStore(readRawStore(storage));
@@ -300,6 +301,7 @@
         amount: record.amount,
         date: record.date,
         categoryId: record.categoryId,
+        expenseRole: record.expenseRole,
         note: record.note,
         createdAt: record.createdAt,
         updatedAt: record.updatedAt
@@ -394,6 +396,7 @@
               amount,
               date: normalizeDateValue(record.date) || getTodayValue(),
               categoryId: categoryIds.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID,
+              expenseRole: normalizeExpenseRole(record.expenseRole, categoryIds.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID),
               note: toText(record.note),
               createdAt,
               updatedAt: normalizeDateTime(record.updatedAt) || createdAt
@@ -527,6 +530,11 @@
 
   function getFallbackCategory() {
     return BUILTIN_CATEGORIES.find(category => category.id === FALLBACK_CATEGORY_ID) || BUILTIN_CATEGORIES[0];
+  }
+
+  function normalizeExpenseRole(value, categoryId) {
+    if (value === 'life_support' || value === 'life_extra') return value;
+    return LIFE_SUPPORT_CATEGORY_IDS.has(categoryId) ? 'life_support' : 'life_extra';
   }
 
   function buildPlannedDateFromRecurringDay(month, recurringDay) {

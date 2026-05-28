@@ -1,0 +1,460 @@
+:root {
+  --freedom-bg: #07070d;
+  --freedom-panel: rgba(17, 18, 27, 0.82);
+  --freedom-panel-strong: rgba(25, 24, 32, 0.92);
+  --freedom-text: #f8f2df;
+  --freedom-muted: #b9ad93;
+  --freedom-line: rgba(252, 211, 77, 0.16);
+  --freedom-gold: #fcd34d;
+  --freedom-amber: #f59e0b;
+  --freedom-blue: #93c5fd;
+  --freedom-red: #fb7185;
+  --freedom-radius: 18px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body.freedom-page {
+  min-height: 100vh;
+  margin: 0;
+  color: var(--freedom-text);
+  background:
+    radial-gradient(circle at 74% 18%, rgba(252, 211, 77, 0.16), transparent 22%),
+    radial-gradient(circle at 16% 78%, rgba(147, 197, 253, 0.12), transparent 30%),
+    linear-gradient(180deg, #05050a, #0d0b12 48%, #07070d);
+  font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+  overflow-x: hidden;
+}
+
+body.freedom-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: -1;
+  background-image:
+    radial-gradient(circle, rgba(255, 255, 255, 0.26) 0 1px, transparent 1.5px),
+    radial-gradient(circle, rgba(252, 211, 77, 0.18) 0 1px, transparent 1.5px);
+  background-size: 86px 86px, 137px 137px;
+  opacity: 0.42;
+}
+
+.freedom-page .site-top-nav {
+  position: relative;
+  width: min(1160px, calc(100% - 28px));
+  margin: 14px auto 0;
+  z-index: 5;
+}
+
+.freedom-shell {
+  width: min(1160px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: 24px 0 46px;
+}
+
+.freedom-core {
+  display: grid;
+  gap: 14px;
+  padding: clamp(16px, 2.4vw, 22px);
+  border: 1px solid var(--freedom-line);
+  border-radius: 26px;
+  background:
+    linear-gradient(135deg, rgba(252, 211, 77, 0.09), transparent 38%),
+    rgba(12, 12, 18, 0.88);
+  box-shadow: 0 18px 56px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.freedom-core__summary {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(220px, 330px);
+  gap: 18px;
+  align-items: stretch;
+}
+
+.freedom-label {
+  margin: 0 0 10px;
+  color: var(--freedom-gold);
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 0.18em;
+}
+
+.freedom-core h1 {
+  margin: 0;
+  font-size: clamp(1.7rem, 3vw, 2.75rem);
+  line-height: 1.05;
+  letter-spacing: 0;
+}
+
+.freedom-core h1 strong {
+  color: var(--freedom-gold);
+}
+
+.freedom-core__summary p:last-child {
+  max-width: 720px;
+  margin: 12px 0 0;
+  color: var(--freedom-muted);
+  line-height: 1.65;
+}
+
+.freedom-days-card {
+  display: grid;
+  align-content: center;
+  gap: 8px;
+  padding: 20px;
+  border: 1px solid rgba(252, 211, 77, 0.2);
+  border-radius: 22px;
+  background: rgba(5, 5, 10, 0.74);
+}
+
+.freedom-days-card span,
+.freedom-days-card small {
+  color: var(--freedom-muted);
+}
+
+.freedom-days-card strong {
+  color: var(--freedom-text);
+  font-size: clamp(1.55rem, 3vw, 2.35rem);
+  line-height: 1;
+}
+
+.freedom-actions {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.3fr);
+  gap: 14px;
+}
+
+.freedom-mini-form {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+  align-items: end;
+  padding: 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.freedom-mini-form .freedom-status {
+  grid-column: 1 / -1;
+}
+
+.freedom-mini-form--money {
+  grid-template-columns: minmax(120px, 0.76fr) minmax(180px, 1fr) auto;
+}
+
+.freedom-action-buttons {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.freedom-field--note input {
+  border-color: rgba(147, 197, 253, 0.16);
+}
+
+.freedom-metric span,
+.freedom-metric small {
+  color: var(--freedom-muted);
+}
+
+.freedom-metrics {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 0;
+}
+
+.freedom-metric,
+.freedom-panel,
+.freedom-stage {
+  border: 1px solid var(--freedom-line);
+  background: var(--freedom-panel);
+  box-shadow: 0 18px 50px rgba(0, 0, 0, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.05);
+}
+
+.freedom-metric {
+  display: grid;
+  gap: 8px;
+  padding: 15px;
+  border-radius: 18px;
+}
+
+.freedom-metric strong {
+  color: var(--freedom-text);
+  font-size: clamp(1.2rem, 2.6vw, 1.8rem);
+}
+
+.freedom-stage {
+  padding: 20px;
+  border-radius: 28px;
+  margin-top: 18px;
+}
+
+.grid-stage-head,
+.panel-title {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 16px;
+}
+
+.grid-stage-head h2,
+.panel-title h2 {
+  margin: 0;
+  font-size: 1.25rem;
+}
+
+.grid-stage-head p,
+.panel-title p {
+  margin: 6px 0 0;
+  color: var(--freedom-muted);
+  line-height: 1.6;
+}
+
+.freedom-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 42px;
+  padding: 0 16px;
+  border-radius: 999px;
+  border: 1px solid rgba(252, 211, 77, 0.28);
+  color: var(--freedom-text);
+  background: rgba(252, 211, 77, 0.1);
+  text-decoration: none;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.2s ease, border-color 0.2s ease, background 0.2s ease;
+}
+
+.freedom-button:hover:not(:disabled),
+.freedom-button:focus-visible {
+  transform: translateY(-1px);
+  border-color: rgba(252, 211, 77, 0.5);
+  background: rgba(252, 211, 77, 0.17);
+  outline: none;
+}
+
+.freedom-button--gold {
+  color: #15110a;
+  background: linear-gradient(135deg, var(--freedom-gold), #f97316);
+  border-color: transparent;
+}
+
+.freedom-button--add {
+  color: #17120a;
+  border-color: transparent;
+  background: linear-gradient(135deg, #fde68a, var(--freedom-gold));
+}
+
+.freedom-button--spend {
+  color: #fff2f2;
+  border-color: rgba(251, 113, 133, 0.34);
+  background: rgba(251, 113, 133, 0.14);
+}
+
+.freedom-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.48;
+}
+
+.life-grid-frame {
+  min-height: clamp(230px, 24vw, 320px);
+  border-radius: 22px;
+  overflow: hidden;
+  border: 1px solid rgba(252, 211, 77, 0.14);
+  background: #08090f;
+}
+
+#freedomGridCanvas {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+}
+
+.freedom-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  color: var(--freedom-muted);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.freedom-legend span {
+  display: inline-flex;
+  gap: 7px;
+  align-items: center;
+}
+
+.freedom-legend i {
+  width: 11px;
+  height: 11px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.freedom-legend i.is-lit {
+  background: var(--freedom-gold);
+  border-color: rgba(252, 211, 77, 0.8);
+  box-shadow: 0 0 12px rgba(252, 211, 77, 0.46);
+}
+
+.freedom-panel {
+  padding: 22px;
+  border-radius: 24px;
+}
+
+.freedom-field {
+  display: grid;
+  gap: 8px;
+}
+
+.freedom-field span {
+  color: var(--freedom-muted);
+  font-weight: 700;
+  font-size: 13px;
+}
+
+.freedom-field input,
+.freedom-field textarea {
+  width: 100%;
+  min-height: 46px;
+  padding: 12px 14px;
+  color: var(--freedom-text);
+  background: rgba(5, 5, 10, 0.72);
+  border: 1px solid rgba(252, 211, 77, 0.18);
+  border-radius: 16px;
+  resize: vertical;
+}
+
+.freedom-field input:focus,
+.freedom-field textarea:focus {
+  outline: none;
+  border-color: rgba(252, 211, 77, 0.52);
+  box-shadow: 0 0 0 3px rgba(252, 211, 77, 0.1);
+}
+
+#dailyNeedForm,
+#freedomEntryForm {
+  display: grid;
+  gap: 14px;
+}
+
+.freedom-status {
+  min-height: 20px;
+  margin: 0;
+  color: #fca5a5;
+}
+
+.freedom-status.is-success {
+  color: #86efac;
+}
+
+.freedom-history {
+  margin-top: 18px;
+}
+
+.freedom-entry-list {
+  display: grid;
+  gap: 10px;
+}
+
+.freedom-entry {
+  display: grid;
+  grid-template-columns: 112px minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+  padding: 13px 14px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.freedom-entry span,
+.freedom-entry small {
+  color: var(--freedom-muted);
+}
+
+.freedom-entry strong {
+  display: block;
+  color: var(--freedom-text);
+  margin-bottom: 4px;
+}
+
+.freedom-entry b {
+  color: var(--freedom-gold);
+}
+
+.freedom-entry--spend b {
+  color: #fca5a5;
+}
+
+.freedom-empty {
+  display: grid;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 18px;
+  text-align: center;
+  color: var(--freedom-muted);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px dashed rgba(252, 211, 77, 0.18);
+}
+
+.freedom-empty strong {
+  color: var(--freedom-text);
+}
+
+@media (max-width: 760px) {
+  .freedom-shell,
+  .freedom-page .site-top-nav {
+    width: min(100% - 18px, 520px);
+  }
+
+  .freedom-shell {
+    padding-top: 18px;
+  }
+
+  .freedom-core__summary,
+  .freedom-actions,
+  .freedom-mini-form,
+  .freedom-mini-form--money,
+  .freedom-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .freedom-action-buttons {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .life-grid-frame {
+    min-height: 260px;
+  }
+
+  .freedom-button {
+    width: 100%;
+  }
+
+  .grid-stage-head,
+  .panel-title {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .freedom-entry {
+    grid-template-columns: 1fr;
+    align-items: start;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .freedom-button {
+    transition: none;
+  }
+}

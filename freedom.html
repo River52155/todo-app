@@ -1,0 +1,113 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>自由天数</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="styles/page-nav.css" />
+  <link rel="stylesheet" href="styles/motion.css" />
+  <link rel="stylesheet" href="styles/freedom.css" />
+</head>
+<body class="freedom-page">
+  <nav class="site-top-nav" aria-label="主导航">
+    <a class="site-top-nav__brand" href="index.html">River Todo</a>
+    <div class="page-nav site-top-nav__links">
+      <a class="nav-link" href="index.html">每日计划</a>
+      <a class="nav-link" href="recent.html">近期计划</a>
+      <a class="nav-link" href="goals.html#overview">长期目标</a>
+      <a class="nav-link" href="budget.html">月度花销</a>
+      <a class="nav-link" href="expenses.html">消费记录</a>
+      <a class="nav-link active" href="freedom.html">自由天数</a>
+      <a class="nav-link" href="moments.html">回顾时刻</a>
+    </div>
+  </nav>
+
+  <main class="freedom-shell" id="freedomApp">
+    <section class="freedom-core" data-motion-stage style="--motion-order: 0;">
+      <div class="freedom-core__summary" aria-label="自由天数摘要">
+        <div>
+          <p class="freedom-label">自由天数</p>
+          <h1>可以买 <strong id="freeDaysText">0 天</strong></h1>
+          <p id="gridSummary">设置每日基本消费后，闲置资金会被换算成自由天数。</p>
+        </div>
+        <div class="freedom-days-card">
+          <span>当前闲置资金</span>
+          <strong id="availableFundText">¥0.00</strong>
+          <small id="nextDayGapText">先设置每日基本消费</small>
+        </div>
+      </div>
+
+      <div class="freedom-metrics">
+        <article class="freedom-metric">
+          <span>每日基本消费</span>
+          <strong id="dailyNeedText">未设置</strong>
+        </article>
+        <article class="freedom-metric">
+          <span>已消耗资金</span>
+          <strong id="totalSpendText">¥0.00</strong>
+        </article>
+        <article class="freedom-metric">
+          <span>消耗自由</span>
+          <strong id="spentDaysText">0 天</strong>
+        </article>
+      </div>
+
+      <div class="freedom-actions">
+        <form class="freedom-mini-form" id="dailyNeedForm">
+          <label class="freedom-field" for="dailyNeedInput">
+            <span>每日基本消费</span>
+            <input id="dailyNeedInput" type="number" min="0.01" step="0.01" placeholder="例如：60" />
+          </label>
+          <button class="freedom-button freedom-button--gold" type="submit">保存</button>
+          <p class="freedom-status" id="dailyNeedStatus" aria-live="polite"></p>
+        </form>
+
+        <form class="freedom-mini-form freedom-mini-form--money" id="freedomEntryForm">
+          <label class="freedom-field" for="freedomAmountInput">
+            <span>金额</span>
+            <input id="freedomAmountInput" type="number" min="0.01" step="0.01" placeholder="例如：500" />
+          </label>
+          <label class="freedom-field freedom-field--note" for="freedomNoteInput">
+            <span>备注</span>
+            <input id="freedomNoteInput" type="text" maxlength="40" placeholder="例如：晚饭、游戏、卖闲置" />
+          </label>
+          <div class="freedom-action-buttons">
+            <button class="freedom-button freedom-button--add" type="submit" name="freedomAction" value="fund" id="addFundButton">增加资金</button>
+            <button class="freedom-button freedom-button--spend" type="submit" name="freedomAction" value="spend" id="spendFundButton">减少资金</button>
+          </div>
+          <p class="freedom-status" id="freedomEntryStatus" aria-live="polite"></p>
+        </form>
+      </div>
+    </section>
+
+    <section class="freedom-stage">
+      <div class="grid-stage-head">
+        <div>
+          <h2>一格一天</h2>
+          <p>金色是已经买到的自由天数，灰色是当前还买不起的天数。</p>
+        </div>
+        <div class="freedom-legend" aria-label="方块颜色说明">
+          <span><i class="is-lit"></i>已买到</span>
+          <span><i></i>还买不起</span>
+        </div>
+      </div>
+      <div class="life-grid-frame">
+        <canvas id="freedomGridCanvas" width="900" height="360" aria-label="自由天数方块图"></canvas>
+      </div>
+    </section>
+
+    <section class="freedom-panel freedom-history">
+      <div class="panel-title">
+        <h2>最近变化</h2>
+        <p>这里只记录这笔自由资金池的增加和减少。</p>
+      </div>
+      <div class="freedom-entry-list" id="freedomEntryList"></div>
+    </section>
+  </main>
+
+  <script src="scripts/motion.js"></script>
+  <script src="scripts/freedom-store.js"></script>
+  <script src="scripts/freedom.js"></script>
+</body>
+</html>

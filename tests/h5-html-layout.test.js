@@ -15,6 +15,7 @@ const H5_NAV_PAGES = [
   ['goals.html', '长期目标'],
   ['budget.html', '月度花销'],
   ['expenses.html', '消费记录'],
+  ['freedom.html', '自由天数'],
   ['moments.html', '回顾时刻']
 ];
 
@@ -152,9 +153,15 @@ test('expenses trend chart uses range-specific views without jumpy shell swaps',
 
   assert.equal(script.includes('function buildTrendView'), true);
   assert.equal(script.includes('layout: "month-squares"'), true);
+  assert.equal(script.includes('expenseRole'), true);
+  assert.equal(script.includes('function renderRoleAnalysis'), true);
   assert.equal(script.includes('function renderTrendYearOverview'), true);
   assert.equal(script.includes('animateSwap(document.getElementById("trendChartShell")'), false);
+  assert.equal(html.includes('name="expenseRoleInput"'), true);
+  assert.equal(html.includes('id="role-analysis"'), true);
   assert.equal(css.includes('.trend-chart-shell--year'), true);
+  assert.equal(css.includes('.expense-role-toggle'), true);
+  assert.equal(css.includes('.role-analysis-panel'), true);
   assert.equal(css.includes('.trend-year-grid'), true);
   assert.equal(css.includes('.trend-year-cell'), true);
   assert.equal(css.includes('.trend-grid--day'), true);
@@ -180,6 +187,7 @@ test('expense visual page exports records with a Saul Bass inspired poster layou
   assert.equal(html.includes('styles/motion.css'), true);
   assert.equal(html.includes('styles/expense-visual.css'), true);
   assert.equal(html.includes('scripts/motion.js'), true);
+  assert.equal(html.includes('scripts/expense-role.js'), true);
   assert.equal(html.includes('scripts/expense-visual.js'), true);
   assert.match(html, /<a class="nav-link active"[^>]*>消费记录<\/a>/);
 
@@ -196,6 +204,8 @@ test('expense visual page exports records with a Saul Bass inspired poster layou
     'id="insightTempo"',
     'id="insightAdvice"',
     'id="insightRisk"',
+    'id="bassRoleSummary"',
+    'id="bassRoleCuts"',
     'id="categoryFocusLabel"',
     'id="bassCategoryBlocks"',
     'id="bassTimeline"',
@@ -207,6 +217,8 @@ test('expense visual page exports records with a Saul Bass inspired poster layou
 
   assert.equal(expensesHtml.includes('href="expense-visual.html"'), true);
   assert.equal(script.includes('const STORAGE_KEY = "expenseTracker:v1";'), true);
+  assert.equal(script.includes('expenseRole'), true);
+  assert.equal(script.includes('function renderRoleCuts'), true);
   assert.equal(script.includes('function exportExpenseRecords'), true);
   assert.equal(script.includes('function exportHtmlReport'), true);
   assert.equal(script.includes('function buildInsights'), true);
@@ -227,11 +239,83 @@ test('expense visual page exports records with a Saul Bass inspired poster layou
   assert.equal(css.includes('.paper-cut--red'), true);
   assert.equal(css.includes('.insight-marquee'), true);
   assert.equal(css.includes('.insight-card'), true);
+  assert.equal(css.includes('.role-poster'), true);
+  assert.equal(css.includes('.role-cut'), true);
   assert.equal(css.includes('.category-cut'), true);
   assert.equal(css.includes('.category-cut.is-active'), true);
   assert.equal(css.includes('.month-cut'), true);
   assert.equal(css.includes('clip-path: polygon'), true);
   assert.equal(css.includes('@media print'), true);
+  assert.equal(css.includes('@media (max-width: 760px)'), true);
+});
+
+test('freedom page turns idle funds into freedom-day blocks', () => {
+  const html = readFile('freedom.html');
+  const css = readFile('styles/freedom.css');
+  const script = readFile('scripts/freedom.js');
+  const store = readFile('scripts/freedom-store.js');
+  const expensesHtml = readFile('expenses.html');
+
+  assert.equal(html.includes('styles/page-nav.css'), true);
+  assert.equal(html.includes('styles/motion.css'), true);
+  assert.equal(html.includes('styles/freedom.css'), true);
+  assert.equal(html.includes('scripts/expense-role.js'), false);
+  assert.equal(html.includes('scripts/freedom-store.js'), true);
+  assert.equal(html.includes('scripts/freedom.js'), true);
+  assert.match(html, /<a class="nav-link active"[^>]*>自由天数<\/a>/);
+  assert.equal(expensesHtml.includes('href="freedom.html"'), true);
+  assert.equal(html.includes('看清一笔闲钱'), false);
+  assert.equal(html.includes('Freedom days'), false);
+
+  [
+    'id="freedomApp"',
+    'id="freeDaysText"',
+    'id="nextDayGapText"',
+    'id="dailyNeedInput"',
+    'id="freedomEntryForm"',
+    'id="freedomAmountInput"',
+    'id="freedomNoteInput"',
+    'id="addFundButton"',
+    'id="spendFundButton"',
+    'value="fund"',
+    'value="spend"',
+    'id="freedomGridCanvas"',
+    'id="freedomEntryList"'
+  ].forEach(marker => {
+    assert.equal(html.includes(marker), true, `${marker} should exist`);
+  });
+
+  [
+    'id="useDailySuggestion"',
+    'name="freedomEntryType"',
+    'id="freedomDateInput"',
+    'class="freedom-hero"'
+  ].forEach(marker => {
+    assert.equal(html.includes(marker), false, `${marker} should be removed`);
+  });
+
+  assert.equal(store.includes('const STORAGE_KEY = "riverFreedom:v1";'), true);
+  assert.equal(store.includes('function buildFreedomView'), true);
+  assert.equal(store.includes('function buildDailyNeedSuggestion'), true);
+  assert.equal(store.includes('throw new Error("这笔花费超过了当前闲置资金")'), true);
+  assert.equal(script.includes('function drawGrid'), true);
+  assert.equal(script.includes('function calculateVisibleDays'), true);
+  assert.equal(script.includes('function buildNextDayGapText'), true);
+  assert.equal(script.includes('getValue("freedomNoteInput")'), true);
+  assert.equal(script.includes('function readCssPixels'), true);
+  assert.equal(script.includes('gapX'), true);
+  assert.equal(script.includes('FreedomStore.upsertEntry'), true);
+  assert.equal(script.includes('FreedomStore.buildDailyNeedSuggestion'), false);
+  assert.equal(script.includes('rgba(255, 255, 255, 0.12)'), true);
+  assert.equal(script.includes('#fcd34d'), true);
+  assert.equal(css.includes('.freedom-core'), true);
+  assert.equal(css.includes('#freedomGridCanvas'), true);
+  assert.equal(css.includes('.freedom-action-buttons'), true);
+  assert.equal(css.includes('.freedom-field--note'), true);
+  assert.equal(css.includes('min-height: clamp(230px, 24vw, 320px)'), true);
+  assert.equal(css.includes('.freedom-legend'), true);
+  assert.equal(css.includes('.freedom-hero'), false);
+  assert.equal(css.includes('.freedom-segment'), false);
   assert.equal(css.includes('@media (max-width: 760px)'), true);
 });
 

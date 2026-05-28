@@ -34,6 +34,7 @@ test('budget store saves monthly plans and fixed templates into the shared local
         amount: 14,
         date: '2026-04-01',
         categoryId: 'food',
+        expenseRole: 'life_support',
         note: '早餐'
       }
     ]
@@ -65,6 +66,7 @@ test('budget store saves monthly plans and fixed templates into the shared local
   assert.equal(view.summary.fixedTotal, 900);
   assert.equal(view.summary.oneOffTotal, 356);
   assert.equal(view.summary.actualTotal, 14);
+  assert.equal(reloadedStore.records[0].expenseRole, 'life_support');
   assert.equal(view.items.length, 2);
   assert.equal(view.templates.length, 1);
 });

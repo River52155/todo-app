@@ -3,6 +3,35 @@ const ExpensesApp = (() => {
   const DEFAULT_RANGE = "month";
   const FALLBACK_CATEGORY_ID = "other";
   const BUILTIN_CREATED_AT = "1970-01-01T00:00:00.000Z";
+  const ExpenseRoleApi = globalThis.ExpenseRole || {
+    LIFE_SUPPORT: "life_support",
+    LIFE_EXTRA: "life_extra",
+    normalizeExpenseRole: (value, categoryId) => value === "life_support" || value === "life_extra" ? value : (["food", "transport", "daily", "medical", "housing"].includes(categoryId) ? "life_support" : "life_extra"),
+    defaultRoleForCategory: categoryId => ["food", "transport", "daily", "medical", "housing"].includes(categoryId) ? "life_support" : "life_extra",
+    getRoleMeta: role => role === "life_support"
+      ? { label: "基础生存", shortLabel: "必要", color: "#67e8f9", softColor: "rgba(103, 232, 249, 0.22)" }
+      : { label: "自由选择", shortLabel: "非必要", color: "#f8c76b", softColor: "rgba(248, 199, 107, 0.22)" },
+    buildRoleBreakdown: records => {
+      const rows = [
+        { role: "life_support", label: "基础生存", shortLabel: "必要", color: "#67e8f9", total: 0, count: 0, percent: 0, totalText: "¥0.00", percentText: "0.0%" },
+        { role: "life_extra", label: "自由选择", shortLabel: "非必要", color: "#f8c76b", total: 0, count: 0, percent: 0, totalText: "¥0.00", percentText: "0.0%" }
+      ];
+      records.forEach(record => {
+        const role = (record.expenseRole === "life_support" || record.expenseRole === "life_extra") ? record.expenseRole : (["food", "transport", "daily", "medical", "housing"].includes(record.categoryId) ? "life_support" : "life_extra");
+        const row = rows.find(item => item.role === role) || rows[1];
+        row.total = roundAmount(row.total + Number(record.amount || 0));
+        row.count += 1;
+      });
+      const total = roundAmount(rows.reduce((sum, row) => sum + row.total, 0));
+      rows.forEach(row => {
+        row.percent = total ? Math.round((row.total / total) * 1000) / 10 : 0;
+        row.totalText = formatCurrency(row.total);
+        row.percentText = formatPercent(row.percent);
+      });
+      return { total, totalText: formatCurrency(total), rows };
+    },
+    buildRoleTrend: () => ({ range: "month", layout: "days", maxTotal: 1, points: [] })
+  };
   const RANGE_META = {
     day: { label: "今日", totalLabel: "今日总消费", countLabel: "今日记录数", averageLabel: "今日平均消费", trendLabel: "今日消费趋势", categoryLabel: "今日分类构成" },
     week: { label: "本周", totalLabel: "本周总消费", countLabel: "本周记录数", averageLabel: "本周日均消费", trendLabel: "本周消费趋势", categoryLabel: "本周分类构成" },
@@ -25,6 +54,7 @@ const ExpensesApp = (() => {
     selectedForecastMonth: getCurrentMonthKey(),
     selectedRecordsMonth: getCurrentMonthKey(),
     selectedRecordDate: getTodayValue(),
+    expenseRoleTouched: false,
     store: null
   };
 
@@ -85,6 +115,22 @@ const ExpensesApp = (() => {
       event.preventDefault();
       saveExpenseRecord();
     });
+
+    document.getElementById("expenseCategoryInput")?.addEventListener("change", event => {
+      if (!state.expenseRoleTouched) {
+        setSelectedExpenseRole(ExpenseRoleApi.defaultRoleForCategory(toText(event.target.value)));
+      }
+      updateExpenseRoleHint();
+    });
+
+    document.querySelectorAll('input[name="expenseRoleInput"]').forEach(input => {
+      input.addEventListener("change", () => {
+        state.expenseRoleTouched = true;
+        updateExpenseRoleHint();
+      });
+    });
+
+    document.getElementById("expenseAmountInput")?.addEventListener("input", updateExpenseRoleHint);
 
     document.getElementById("cancelExpenseEdit")?.addEventListener("click", () => {
       resetExpenseForm();
@@ -358,6 +404,7 @@ const ExpensesApp = (() => {
     const renderTrend = () => renderTrendChart(trendView);
 
     renderCategory();
+    renderRoleAnalysis(rangeStats);
     renderTrend();
   }
 
@@ -403,6 +450,109 @@ const ExpensesApp = (() => {
         </div>
       </div>
     `).join("");
+  }
+
+  function renderRoleAnalysis(rangeStats) {
+    const overview = document.getElementById("roleSplitOverview");
+    const trendShell = document.getElementById("roleTrendShell");
+    if (!overview || !trendShell) return;
+
+    const meta = RANGE_META[state.selectedRange] || RANGE_META.month;
+    const breakdown = ExpenseRoleApi.buildRoleBreakdown(rangeStats.records);
+    const trend = ExpenseRoleApi.buildRoleTrend(state.selectedRange, rangeStats.records, rangeStats.info);
+
+    setText("roleSummaryLabel", `当前范围：${meta.label}，基础生存和自由选择合计 ${breakdown.totalText}。`);
+    overview.innerHTML = renderRoleSplitOverview(breakdown);
+    trendShell.innerHTML = renderRoleTrend(trend);
+  }
+
+  function renderRoleSplitOverview(breakdown) {
+    if (!breakdown.total) {
+      return `
+        <div class="empty-state role-empty">
+          <strong>还没有可拆分的消费</strong>
+          <span>新增消费后，这里会把钱分成基础生存和自由选择两本账。</span>
+        </div>
+      `;
+    }
+
+    const support = breakdown.rows.find(row => row.role === ExpenseRoleApi.LIFE_SUPPORT) || breakdown.rows[0];
+    const extra = breakdown.rows.find(row => row.role === ExpenseRoleApi.LIFE_EXTRA) || breakdown.rows[1];
+    return `
+      <div class="role-total-card">
+        <span>当前范围总消费</span>
+        <strong>${escapeHtml(breakdown.totalText)}</strong>
+        <small>基础生存 ${escapeHtml(support.percentText)} · 自由选择 ${escapeHtml(extra.percentText)}</small>
+      </div>
+      <div class="role-stack" aria-label="基础生存和自由选择占比">
+        <span class="role-stack-fill role-stack-fill--support" style="width:${support.percent}%;"></span>
+        <span class="role-stack-fill role-stack-fill--extra" style="width:${extra.percent}%;"></span>
+      </div>
+      <div class="role-ledger-grid">
+        ${breakdown.rows.map(row => `
+          <article class="role-ledger-card role-ledger-card--${escapeAttribute(row.role)}">
+            <span class="role-ledger-label">${escapeHtml(row.label)}</span>
+            <strong>${escapeHtml(row.totalText)}</strong>
+            <small>${escapeHtml(row.count)} 笔 · 占比 ${escapeHtml(row.percentText)}</small>
+          </article>
+        `).join("")}
+      </div>
+    `;
+  }
+
+  function renderRoleTrend(view) {
+    if (!view.points.length || view.points.every(point => point.total <= 0)) {
+      return `
+        <div class="empty-state role-empty">
+          <strong>还没有分层趋势</strong>
+          <span>当基础生存和自由选择都有记录时，这里会显示它们如何叠在每一天或每个月里。</span>
+        </div>
+      `;
+    }
+
+    const maxValue = Math.max(view.maxTotal, 1);
+    if (view.range === "year") {
+      return `
+        <div class="role-month-grid" aria-label="年度双账本分层">
+          ${view.points.map(point => renderRoleTrendMonth(point, maxValue)).join("")}
+        </div>
+      `;
+    }
+
+    const minColumnWidth = view.range === "month" ? 24 : view.range === "day" ? 22 : 42;
+    const minWidth = view.range === "week" ? "100%" : `${view.points.length * minColumnWidth}px`;
+    return `
+      <div class="role-trend-grid role-trend-grid--${escapeAttribute(view.range)}" style="grid-template-columns: repeat(${view.points.length}, minmax(${minColumnWidth}px, 1fr)); min-width:${minWidth};">
+        ${view.points.map(point => {
+          const supportHeight = Math.max((point.supportTotal / maxValue) * 100, point.supportTotal > 0 ? 4 : 0);
+          const extraHeight = Math.max((point.extraTotal / maxValue) * 100, point.extraTotal > 0 ? 4 : 0);
+          return `
+            <div class="role-trend-bar" title="${escapeAttribute(point.label)}：基础 ${point.supportText}，自由 ${point.extraText}">
+              <div class="role-trend-track">
+                <span class="role-trend-segment role-trend-segment--extra" style="height:${extraHeight}%"></span>
+                <span class="role-trend-segment role-trend-segment--support" style="height:${supportHeight}%"></span>
+              </div>
+              <span class="role-trend-label">${escapeHtml(point.label)}</span>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  }
+
+  function renderRoleTrendMonth(point, maxValue) {
+    const percent = Math.max(0, Math.min(100, (point.total / maxValue) * 100));
+    const supportPercent = point.total ? Math.round((point.supportTotal / point.total) * 1000) / 10 : 0;
+    return `
+      <article class="role-month-cell" title="${escapeAttribute(point.label)}：基础 ${point.supportText}，自由 ${point.extraText}">
+        <span>${escapeHtml(point.label)}</span>
+        <strong>${escapeHtml(point.totalText)}</strong>
+        <div class="role-month-meter">
+          <span style="width:${percent}%"></span>
+        </div>
+        <small>基础 ${supportPercent.toFixed(1)}%</small>
+      </article>
+    `;
   }
 
   function renderTrendChart(view) {
@@ -587,6 +737,7 @@ const ExpensesApp = (() => {
 
   function renderExpenseRecordItem(record) {
     const category = getCategoryById(record.categoryId);
+    const roleMeta = ExpenseRoleApi.getRoleMeta(record.expenseRole);
     return `
       <article class="record-item" data-record-id="${escapeAttribute(record.id)}">
         <div class="record-main">
@@ -596,6 +747,7 @@ const ExpensesApp = (() => {
               <span>${escapeHtml(category.icon)} ${escapeHtml(category.name)}</span>
             </span>
             <span class="record-date">${escapeHtml(formatDateLabel(record.date))}</span>
+            <span class="record-chip record-chip--role record-chip--${escapeAttribute(ExpenseRoleApi.normalizeExpenseRole(record.expenseRole, record.categoryId))}">${escapeHtml(roleMeta.shortLabel || roleMeta.label)}</span>
             <span class="record-chip">录入于 ${escapeHtml(formatDateTime(record.createdAt))}</span>
           </div>
           <p class="record-note">${escapeHtml(record.note || "未填写备注")}</p>
@@ -666,6 +818,7 @@ const ExpensesApp = (() => {
     const amount = normalizeAmount(getValue("expenseAmountInput"));
     const date = normalizeDateValue(getValue("expenseDateInput")) || getTodayValue();
     const categoryId = toText(getValue("expenseCategoryInput")) || FALLBACK_CATEGORY_ID;
+    const expenseRole = getSelectedExpenseRole(categoryId);
     const note = toText(getValue("expenseNoteInput"));
     const editingId = toText(getValue("expenseEditingId"));
 
@@ -689,6 +842,7 @@ const ExpensesApp = (() => {
       current.amount = amount;
       current.date = date;
       current.categoryId = categoryId;
+      current.expenseRole = expenseRole;
       current.note = note;
       current.updatedAt = now;
     } else {
@@ -697,6 +851,7 @@ const ExpensesApp = (() => {
         amount,
         date,
         categoryId,
+        expenseRole,
         note,
         createdAt: now,
         updatedAt: now
@@ -722,6 +877,8 @@ const ExpensesApp = (() => {
     setValue("expenseAmountInput", record.amount.toFixed(2));
     setValue("expenseDateInput", record.date);
     setValue("expenseCategoryInput", record.categoryId);
+    setSelectedExpenseRole(ExpenseRoleApi.normalizeExpenseRole(record.expenseRole, record.categoryId));
+    state.expenseRoleTouched = true;
     setValue("expenseNoteInput", record.note);
     setText("expenseSubmitLabel", "保存修改");
 
@@ -729,6 +886,7 @@ const ExpensesApp = (() => {
     if (cancelButton) cancelButton.hidden = false;
 
     setStatus("expenseFormStatus", `正在编辑：${formatDateLabel(record.date)} ${formatCurrency(record.amount)}`, true);
+    updateExpenseRoleHint();
     document.getElementById("expenseAmountInput")?.focus();
   }
 
@@ -1214,6 +1372,9 @@ const ExpensesApp = (() => {
 
     const firstCategory = state.store.categories[0]?.id || FALLBACK_CATEGORY_ID;
     setValue("expenseCategoryInput", firstCategory);
+    state.expenseRoleTouched = false;
+    setSelectedExpenseRole(ExpenseRoleApi.defaultRoleForCategory(firstCategory));
+    updateExpenseRoleHint();
     setText("expenseSubmitLabel", "保存消费");
     setStatus("expenseFormStatus", "");
 
@@ -1268,6 +1429,47 @@ const ExpensesApp = (() => {
     renderSelectOptions("expenseCategoryInput", preferredCategoryId);
     renderSelectOptions("forecastCategoryInput", preferredCategoryId);
     renderSelectOptions("fixedForecastCategoryInput", preferredCategoryId);
+  }
+
+  function getSelectedExpenseRole(categoryId = "") {
+    const checked = document.querySelector('input[name="expenseRoleInput"]:checked');
+    return ExpenseRoleApi.normalizeExpenseRole(checked?.value, categoryId);
+  }
+
+  function setSelectedExpenseRole(role) {
+    const normalized = ExpenseRoleApi.normalizeExpenseRole(role, getValue("expenseCategoryInput"));
+    document.querySelectorAll('input[name="expenseRoleInput"]').forEach(input => {
+      input.checked = input.value === normalized;
+    });
+  }
+
+  function updateExpenseRoleHint() {
+    const amount = normalizeAmount(getValue("expenseAmountInput"));
+    const categoryId = toText(getValue("expenseCategoryInput")) || FALLBACK_CATEGORY_ID;
+    const role = getSelectedExpenseRole(categoryId);
+    const roleMeta = ExpenseRoleApi.getRoleMeta(role);
+    const dailyNeed = getFreedomDailyNeed();
+
+    if (role === ExpenseRoleApi.LIFE_EXTRA && amount > 0 && dailyNeed > 0) {
+      setText("expenseRoleHint", `这笔自由选择约等于 ${(amount / dailyNeed).toFixed(1)} 天自由。`);
+      return;
+    }
+
+    if (role === ExpenseRoleApi.LIFE_SUPPORT) {
+      setText("expenseRoleHint", "这笔会计入基础生存，用来估算每日必要花费。");
+      return;
+    }
+
+    setText("expenseRoleHint", `${roleMeta.label}：${roleMeta.description || "用于区分必要和非必要消费。"}`);
+  }
+
+  function getFreedomDailyNeed() {
+    try {
+      if (!globalThis.FreedomStore) return 0;
+      return globalThis.FreedomStore.buildFreedomView(globalThis.FreedomStore.readStore()).dailyNeed || 0;
+    } catch (error) {
+      return 0;
+    }
   }
 
   function getExpenseStore() {
@@ -1353,6 +1555,7 @@ const ExpensesApp = (() => {
       amount,
       date: normalizeDateValue(record.date) || getTodayValue(),
       categoryId: categoryIds.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID,
+      expenseRole: ExpenseRoleApi.normalizeExpenseRole(record.expenseRole, categoryIds.has(record.categoryId) ? record.categoryId : FALLBACK_CATEGORY_ID),
       note: toText(record.note),
       createdAt,
       updatedAt: normalizeDateTime(record.updatedAt) || createdAt

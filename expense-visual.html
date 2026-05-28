@@ -18,6 +18,7 @@
       <a class="nav-link" href="goals.html#overview">长期目标</a>
       <a class="nav-link" href="budget.html">月度花销</a>
       <a class="nav-link active" href="expenses.html">消费记录</a>
+      <a class="nav-link" href="freedom.html">自由天数</a>
       <a class="nav-link" href="moments.html">回顾时刻</a>
     </div>
   </nav>
@@ -82,6 +83,15 @@
       </article>
     </section>
 
+    <section class="role-poster poster-panel" aria-label="必要和非必要消费切片" data-motion-stage style="--motion-order: 2;">
+      <div class="panel-heading">
+        <span>00</span>
+        <h2>必要 / 非必要</h2>
+      </div>
+      <p class="panel-note" id="bassRoleSummary">先把钱分成活着必须花，和主动选择花。</p>
+      <div class="role-cuts" id="bassRoleCuts"></div>
+    </section>
+
     <section class="poster-grid" data-motion-stage style="--motion-order: 2;">
       <article class="poster-panel category-poster">
         <div class="panel-heading">
@@ -120,6 +130,7 @@
   </main>
 
   <script src="scripts/motion.js"></script>
+  <script src="scripts/expense-role.js"></script>
   <script src="scripts/expense-visual.js"></script>
 </body>
 </html>

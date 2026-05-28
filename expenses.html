@@ -19,6 +19,7 @@
         <a class="nav-link" href="goals.html#overview">长期目标</a>
         <a class="nav-link" href="budget.html">月度花销</a>
         <a class="nav-link active" href="expenses.html">消费记录</a>
+        <a class="nav-link" href="freedom.html">自由天数</a>
         <a class="nav-link" href="moments.html">回顾时刻</a>
       </div>
     </nav>
@@ -73,6 +74,7 @@
         <a class="jump-link" href="#quick-entry"><span>录入</span><strong>记一笔</strong></a>
         <a class="jump-link" href="#range"><span>分析</span><strong>看构成</strong></a>
         <a class="jump-link" href="expense-visual.html"><span>导出</span><strong>剪影账本</strong></a>
+        <a class="jump-link" href="freedom.html"><span>自由</span><strong>天数灯</strong></a>
         <a class="jump-link" href="#records"><span>复盘</span><strong>月度记录</strong></a>
       </nav>
 
@@ -99,6 +101,26 @@
               <div class="field full">
                 <label for="expenseCategoryInput">分类</label>
                 <select id="expenseCategoryInput"></select>
+              </div>
+              <div class="field full">
+                <span class="field-label">这笔钱属于</span>
+                <div class="expense-role-toggle" role="radiogroup" aria-label="消费分层">
+                  <label class="expense-role-option expense-role-option--support">
+                    <input type="radio" name="expenseRoleInput" value="life_support" />
+                    <span>
+                      <strong>基础生存</strong>
+                      <small>吃饭、喝水、交通、医疗、居住</small>
+                    </span>
+                  </label>
+                  <label class="expense-role-option expense-role-option--extra">
+                    <input type="radio" name="expenseRoleInput" value="life_extra" />
+                    <span>
+                      <strong>自由选择</strong>
+                      <small>零食、娱乐、购物、生活之外</small>
+                    </span>
+                  </label>
+                </div>
+                <span class="status-note expense-role-hint" id="expenseRoleHint"></span>
               </div>
               <div class="field full">
                 <label for="expenseNoteInput">备注</label>
@@ -178,6 +200,15 @@
             </div>
           </div>
 
+          <div id="role-analysis" class="role-analysis-panel">
+            <div class="mini-section-head">
+              <h3>双账本剖面</h3>
+              <p id="roleSummaryLabel">把花费拆成基础生存和自由选择，先看哪些钱是不得不花。</p>
+            </div>
+            <div class="role-split-overview" id="roleSplitOverview"></div>
+            <div class="role-trend-shell" id="roleTrendShell"></div>
+          </div>
+
           <div id="trend" class="analysis-trend">
             <div class="mini-section-head">
               <h3>趋势图</h3>
@@ -246,6 +277,8 @@
   </div>
 
   <script src="scripts/motion.js"></script>
+  <script src="scripts/expense-role.js"></script>
+  <script src="scripts/freedom-store.js"></script>
   <script src="scripts/expenses.js"></script>
 </body>
 </html>
